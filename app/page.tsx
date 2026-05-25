@@ -141,7 +141,7 @@ export default function Home() {
   const mySettled = myBets.filter((b:any) => b.settled);
   const myWon = mySettled.filter((b:any) => b.actualWin > 0);
   const myLost = mySettled.filter((b:any) => b.actualWin === 0);
-  const myPending = myBets.filter((b:any) => !b.settled);
+  const myPending = myBets.filter((b:any) => !b.settled && !b.confirmedBySGPools);
   const myStaked = myBets.filter((b:any)=>b.settled).reduce((s:number,b:any)=>s+(b.stake||0),0);
   const myWinnings = myWon.reduce((s:number,b:any)=>s+(b.actualWin||0),0);
   const myNet = myWinnings - myStaked;
