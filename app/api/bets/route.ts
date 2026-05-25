@@ -8,14 +8,14 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const b = await req.json();
 
-  // Confirm bets (called by facilitator)
   if (b.action === 'confirm' && b.betIds) {
-    await confirmBets(b.betIds);
+    await confirmBets(b.betIds, b.oddsMap || {});
     return NextResponse.json({ ok: true });
   }
 
-  // Place new bet
-  if (!b.playerName || !b.selection) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  if (!b.playerName || !b.selection) {
+    return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  }
   const bet = await addBet({
     playerName: b.playerName.trim(),
     betType: b.betType,
