@@ -17,6 +17,10 @@ export default function FacilitatorPage() {
   const [saving, setSaving] = useState<string>('');
   const [msg, setMsg] = useState('');
   const [filter, setFilter] = useState<'all'|'unconfirmed'|'confirmed'>('unconfirmed');
+  const [view, setView] = useState<'bets'|'results'>('bets');
+  const [matchResults, setMatchResults] = useState<Record<string,any>>({});
+  const [scoreInput, setScoreInput] = useState<Record<string,any>>({});
+  const [savingResult, setSavingResult] = useState('');
   const [playerFilter, setPlayerFilter] = useState('');
 
   useEffect(() => {
@@ -29,12 +33,14 @@ export default function FacilitatorPage() {
   }, [authed]);
 
   async function loadAll() {
-    const [b, m] = await Promise.all([
+    const [b, m, mr] = await Promise.all([
       fetch('/api/bets').then(r=>r.json()),
       fetch('/api/matches').then(r=>r.json()),
+      fetch('/api/results').then(r=>r.json()),
     ]);
     setBets(b);
     setMatches(m.matches || []);
+    setMatchResults(mr);
   }
 
   function updateOdds(betId: string, val: string) {
@@ -73,6 +79,36 @@ export default function FacilitatorPage() {
     setMsg('All bets confirmed!');
     setTimeout(()=>setMsg(''), 2000);
     loadAll();
+  }
+
+  async function saveResult(matchId: string) {
+    const s = scoreInput[matchId] || {};
+    if (s.homeScore === undefined || s.awayScore === undefined) {
+      setMsg('Enter both full time scores'); return;
+    }
+    setSavingResult(matchId);
+    const res = await fetch('/api/results', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        adminKey: key,
+        matchId,
+        homeScore: s.homeScore,
+        awayScore: s.awayScore,
+        htHomeScore: s.htHomeScore || 0,
+        htAwayScore: s.htAwayScore || 0,
+      }),
+    });
+    setSavingResult('');
+    if (res.ok) {
+      setMsg('Result saved and bets settled!');
+      loadAll();
+      setTimeout(()=>setMsg(''), 3000);
+    } else { setMsg('Failed — check admin key'); }
+  }
+
+  function updateScore(matchId: string, field: string, val: string) {
+    setScoreInput((p:any) => ({...p, [matchId]: {...(p[matchId]||{}), [field]: val === '' ? undefined : parseInt(val)}}));
   }
 
   async function deleteBet(betId: string, label: string) {
@@ -196,7 +232,17 @@ export default function FacilitatorPage() {
           </div>
 
           {/* Status filter */}
-          <div style={{display:'flex',gap:'4px',marginBottom:'6px',overflowX:'auto',scrollbarWidth:'none'}}>
+          {/* Main view toggle */}
+          <div style={{display:'flex',gap:'6px',marginBottom:'8px'}}>
+            {[['bets','Bets'],['results','Set Results']].map(([v,l]) => (
+              <button key={v} onClick={()=>setView(v as any)}
+                style={{padding:'6px 14px',borderRadius:'20px',border:'none',cursor:'pointer',fontWeight:700,fontSize:'12px',background:view===v?'#f5c842':'rgba(255,255,255,0.08)',color:view===v?'#071f10':'#a0a09a'}}>
+                {l}
+              </button>
+            ))}
+          </div>
+
+          <div style={{display:'flex',gap:'4px',marginBottom:'6px',overflowX:'auto',scrollbarWidth:'none',display:view==='bets'?'flex':'none'}}>
             {[['unconfirmed','To Confirm'],['all','All Bets'],['confirmed','Confirmed']].map(([v,l]) => (
               <button key={v} onClick={()=>setFilter(v as any)}
                 style={{padding:'5px 12px',borderRadius:'20px',border:'none',cursor:'pointer',fontWeight:600,flexShrink:0,fontSize:'11px',background:filter===v?'#f5c842':'rgba(255,255,255,0.06)',color:filter===v?'#071f10':'#a0a09a'}}>
@@ -227,7 +273,96 @@ export default function FacilitatorPage() {
           </div>
         )}
 
-        {filtered.length === 0 ? (
+        {view === 'results' && (
+          <div>
+            <div style={{fontSize:'20px',fontWeight:900,color:'#f5c842',marginBottom:'4px',letterSpacing:'1px'}}>SET MATCH RESULTS</div>
+            <div style={{fontSize:'12px',color:'#a0a09a',marginBottom:'16px'}}>Enter the final score to automatically settle all bets for that match</div>
+            {['A','B','C','D','E','F','G','H','I','J','K','L'].map(grp => {
+              const grpMatches = matches.filter((m:any) => m.group === grp);
+              if (grpMatches.length === 0) return null;
+              return (
+                <div key={grp} style={{marginBottom:'20px'}}>
+                  <div style={{fontSize:'12px',fontWeight:700,color:'#a0a09a',marginBottom:'8px',letterSpacing:'2px'}}>GROUP {grp}</div>
+                  <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                    {grpMatches.map((m:any) => {
+                      const settled = matchResults[m.id];
+                      const si = scoreInput[m.id] || {};
+                      return (
+                        <div key={m.id} style={{background:'rgba(255,255,255,0.05)',border:'1px solid '+(settled?'rgba(74,222,128,0.3)':'rgba(255,255,255,0.1)'),borderRadius:'12px',padding:'14px'}}>
+                          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px',flexWrap:'wrap',gap:'6px'}}>
+                            <div>
+                              <div style={{fontWeight:700,fontSize:'14px'}}>{m.homeTeam} vs {m.awayTeam}</div>
+                              <div style={{fontSize:'11px',color:'#a0a09a'}}>{m.date} · {m.time} SGT</div>
+                            </div>
+                            {settled && (
+                              <div style={{padding:'4px 10px',borderRadius:'20px',background:'rgba(74,222,128,0.2)',color:'#4ade80',fontWeight:700,fontSize:'12px'}}>
+                                FT: {settled.homeScore}-{settled.awayScore}
+                                {(settled.htHomeScore !== undefined) && ' (HT: '+settled.htHomeScore+'-'+settled.htAwayScore+')'}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Score inputs */}
+                          <div style={{display:'flex',gap:'8px',alignItems:'flex-end',flexWrap:'wrap'}}>
+                            {/* Full time */}
+                            <div>
+                              <div style={{fontSize:'10px',color:'#a0a09a',marginBottom:'4px'}}>Full Time</div>
+                              <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                                <div style={{textAlign:'center'}}>
+                                  <div style={{fontSize:'10px',color:'#a0a09a',marginBottom:'2px'}}>{m.homeTeam}</div>
+                                  <input type="number" min="0" max="20"
+                                    value={si.homeScore !== undefined ? si.homeScore : (settled?.homeScore !== undefined ? settled.homeScore : '')}
+                                    onChange={e=>updateScore(m.id,'homeScore',e.target.value)}
+                                    style={{width:'48px',padding:'8px 4px',borderRadius:'8px',border:'1px solid rgba(245,200,66,0.4)',background:'rgba(7,31,16,0.8)',color:'#f5c842',fontWeight:900,fontSize:'18px',textAlign:'center',outline:'none',fontFamily:'inherit'}} />
+                                </div>
+                                <div style={{fontWeight:900,color:'#a0a09a',fontSize:'16px',paddingBottom:'2px'}}>-</div>
+                                <div style={{textAlign:'center'}}>
+                                  <div style={{fontSize:'10px',color:'#a0a09a',marginBottom:'2px'}}>{m.awayTeam}</div>
+                                  <input type="number" min="0" max="20"
+                                    value={si.awayScore !== undefined ? si.awayScore : (settled?.awayScore !== undefined ? settled.awayScore : '')}
+                                    onChange={e=>updateScore(m.id,'awayScore',e.target.value)}
+                                    style={{width:'48px',padding:'8px 4px',borderRadius:'8px',border:'1px solid rgba(245,200,66,0.4)',background:'rgba(7,31,16,0.8)',color:'#f5c842',fontWeight:900,fontSize:'18px',textAlign:'center',outline:'none',fontFamily:'inherit'}} />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Half time */}
+                            <div>
+                              <div style={{fontSize:'10px',color:'#a0a09a',marginBottom:'4px'}}>Half Time (for HT/FT bets)</div>
+                              <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                                <input type="number" min="0" max="20"
+                                  value={si.htHomeScore !== undefined ? si.htHomeScore : (settled?.htHomeScore !== undefined ? settled.htHomeScore : '')}
+                                  onChange={e=>updateScore(m.id,'htHomeScore',e.target.value)}
+                                  placeholder="0"
+                                  style={{width:'42px',padding:'6px 4px',borderRadius:'8px',border:'1px solid rgba(255,255,255,0.15)',background:'rgba(7,31,16,0.8)',color:'#f0ede4',fontWeight:700,fontSize:'15px',textAlign:'center',outline:'none',fontFamily:'inherit'}} />
+                                <div style={{fontWeight:700,color:'#a0a09a',fontSize:'14px'}}>-</div>
+                                <input type="number" min="0" max="20"
+                                  value={si.htAwayScore !== undefined ? si.htAwayScore : (settled?.htAwayScore !== undefined ? settled.htAwayScore : '')}
+                                  onChange={e=>updateScore(m.id,'htAwayScore',e.target.value)}
+                                  placeholder="0"
+                                  style={{width:'42px',padding:'6px 4px',borderRadius:'8px',border:'1px solid rgba(255,255,255,0.15)',background:'rgba(7,31,16,0.8)',color:'#f0ede4',fontWeight:700,fontSize:'15px',textAlign:'center',outline:'none',fontFamily:'inherit'}} />
+                              </div>
+                            </div>
+
+                            {/* Save button */}
+                            <button
+                              onClick={()=>saveResult(m.id)}
+                              disabled={savingResult===m.id}
+                              style={{padding:'10px 16px',borderRadius:'8px',border:'none',cursor:'pointer',fontWeight:700,fontSize:'13px',background:'#f5c842',color:'#071f10',opacity:savingResult===m.id?0.5:1,alignSelf:'flex-end'}}>
+                              {savingResult===m.id ? 'Saving...' : settled ? 'Update' : 'Save & Settle Bets'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {view === 'bets' && filtered.length === 0 ? (
           <div style={{padding:'60px',textAlign:'center',color:'#a0a09a',background:'rgba(255,255,255,0.03)',borderRadius:'12px'}}>
             <div style={{fontSize:'40px',marginBottom:'12px'}}>📋</div>
             <div style={{fontWeight:600}}>No bets here yet</div>
@@ -235,7 +370,7 @@ export default function FacilitatorPage() {
               {filter === 'unconfirmed' ? 'All bets have been confirmed!' : 'Players have not placed any bets yet.'}
             </div>
           </div>
-        ) : (
+        ) : view === 'bets' ? (
           <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
             {Object.entries(byPlayer).map(([player, playerBets]) => {
               const unconfirmed = playerBets.filter(b=>!b.confirmedBySGPools);
