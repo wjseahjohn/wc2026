@@ -527,7 +527,7 @@ export default function Home() {
                     <button onClick={()=>{setSlip([]);setStakes({});}} style={{padding:'10px 14px',borderRadius:'10px',border:'1px solid rgba(255,255,255,0.15)',background:'transparent',color:'#a0a09a',cursor:'pointer',fontSize:'13px'}}>Clear</button>
                     <button onClick={placeBets} disabled={submitting}
                       style={{flex:1,padding:'10px',borderRadius:'10px',border:'none',cursor:'pointer',fontWeight:900,fontSize:'14px',letterSpacing:'1px',background:submitting?'rgba(245,200,66,0.5)':'#f5c842',color:'#071f10'}}>
-                      {submitting?'PLACING...`':`PLACE ${slip.length} BET${slip.length>1?'S':''}`}
+                      {submitting?'PLACING...':`PLACE ${slip.length} BET${slip.length>1?'S':''}`}
                     </button>
                   </div>
                 )}
