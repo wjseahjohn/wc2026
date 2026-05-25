@@ -17,9 +17,15 @@ const HTFT_OPTIONS = [
 ];
 
 const CORRECT_SCORES = [
-  '1-0','2-0','2-1','3-0','3-1','3-2',
+  '1-0','2-0','3-0','4-0','5-0',
+  '2-1','3-1','4-1','5-1',
+  '3-2','4-2','5-2',
+  '4-3','5-3',
   '0-0','1-1','2-2','3-3',
-  '0-1','0-2','1-2','0-3','1-3','2-3',
+  '0-1','0-2','0-3','0-4','0-5',
+  '1-2','1-3','1-4',
+  '2-3','2-4',
+  '3-4',
 ];
 
 const TOTAL_GOALS = [
@@ -306,20 +312,33 @@ export default function Home() {
                     )}
 
                     {/* Correct Score */}
-                    {betCat === 'score' && (
+                   {betCat === 'score' && (
                       <div>
-                        <div style={{fontSize:'11px',color:'#a0a09a',marginBottom:'6px'}}>Correct Score</div>
+                        <div style={{display:'flex',gap:'8px',marginBottom:'8px',padding:'8px',borderRadius:'8px',background:'rgba(255,255,255,0.05)'}}>
+                          <div style={{flex:1,textAlign:'center',fontSize:'12px',fontWeight:700,color:'#4ade80'}}>{m.homeFlag} {m.homeTeam}</div>
+                          <div style={{fontSize:'12px',color:'#a0a09a'}}>vs</div>
+                          <div style={{flex:1,textAlign:'center',fontSize:'12px',fontWeight:700,color:'#f87171'}}>{m.awayFlag} {m.awayTeam}</div>
+                        </div>
+                        <div style={{fontSize:'11px',color:'#a0a09a',marginBottom:'4px'}}>🟢 Home goals — Away goals 🔴</div>
                         <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'5px'}}>
                           {CORRECT_SCORES.map(score => {
                             const tid = `${m.id}_score_${score}`; const active = !!s(tid);
+                            const [h,a] = score.split('-');
+                            const isDraw = h===a;
+                            const homeWin = parseInt(h)>parseInt(a);
                             return (
                               <button key={score} disabled={!!result||!namedIn}
-                                onClick={()=>addSlip({targetId:tid,label:`${m.homeTeam} vs ${m.awayTeam}`,selection:score,selectionLabel:`Score ${score}`,betType:'correct_score'})}
-                                style={{padding:'10px 4px',borderRadius:'8px',border:`1px solid ${active?'#f5c842':'rgba(255,255,255,0.1)'}`,background:active?'rgba(245,200,66,0.15)':'rgba(255,255,255,0.04)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,textAlign:'center',fontWeight:700,fontSize:'14px',color:active?'#f5c842':'#f0ede4'}}>
-                                {score}
+                                onClick={()=>addSlip({targetId:tid,label:`${m.homeTeam} vs ${m.awayTeam}`,selection:score,selectionLabel:`${m.homeTeam} ${h} - ${a} ${m.awayTeam}`,betType:'correct_score'})}
+                                style={{padding:'8px 4px',borderRadius:'8px',border:`1px solid ${active?'#f5c842':isDraw?'rgba(245,200,66,0.2)':homeWin?'rgba(74,222,128,0.2)':'rgba(248,113,113,0.2)'}`,background:active?'rgba(245,200,66,0.15)':isDraw?'rgba(245,200,66,0.05)':homeWin?'rgba(74,222,128,0.05)':'rgba(248,113,113,0.05)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,textAlign:'center'}}>
+                                <div style={{fontWeight:900,fontSize:'15px',color:active?'#f5c842':isDraw?'#f5c842':homeWin?'#4ade80':'#f87171'}}>{score}</div>
                               </button>
                             );
                           })}
+                        </div>
+                        <div style={{display:'flex',gap:'8px',marginTop:'6px',fontSize:'10px',color:'#a0a09a'}}>
+                          <span style={{color:'#4ade80'}}>🟢 = {m.homeTeam} win</span>
+                          <span style={{color:'#f5c842'}}>🟡 = Draw</span>
+                          <span style={{color:'#f87171'}}>🔴 = {m.awayTeam} win</span>
                         </div>
                       </div>
                     )}
