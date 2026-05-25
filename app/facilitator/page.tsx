@@ -297,11 +297,10 @@ export default function FacilitatorPage() {
                               <span style={{fontSize:'11px',color:'#a0a09a',flexShrink:0}}>SGPools Odds:</span>
                               <input
                                 type="number" step="0.01" min="1"
-                                value={odds[b.id] || ''}
+                                value={odds[b.id] || (b.odds > 1 ? String(b.odds) : '')}
                                 onChange={e=>updateOdds(b.id, e.target.value)}
                                 placeholder="e.g. 1.85"
-                                disabled={isConfirmed}
-                                style={{flex:1,minWidth:'70px',padding:'4px 8px',borderRadius:'6px',border:'1px solid rgba(245,200,66,0.3)',background:isConfirmed?'rgba(255,255,255,0.03)':'rgba(7,31,16,0.8)',color:isConfirmed?'#a0a09a':'#f5c842',fontWeight:700,fontSize:'14px',outline:'none',fontFamily:'inherit'}}
+                                style={{flex:1,minWidth:'70px',padding:'4px 8px',borderRadius:'6px',border:'1px solid rgba(245,200,66,0.3)',background:'rgba(7,31,16,0.8)',color:'#f5c842',fontWeight:700,fontSize:'14px',outline:'none',fontFamily:'inherit'}}
                               />
                             </div>
 
@@ -318,19 +317,13 @@ export default function FacilitatorPage() {
                               </div>
                             ) : null}
 
-                            {/* Confirm button */}
-                            {!isConfirmed ? (
-                              <button
-                                onClick={()=>confirmBet(b.id)}
-                                disabled={saving===b.id}
-                                style={{padding:'8px 14px',borderRadius:'8px',border:'none',cursor:saving===b.id?'not-allowed':'pointer',fontWeight:700,fontSize:'12px',background:'#f5c842',color:'#071f10',opacity:saving===b.id?0.5:1,flexShrink:0,whiteSpace:'nowrap'}}>
-                                {saving===b.id ? 'Saving...' : 'Placed on SGPools'}
-                              </button>
-                            ) : (
-                              <div style={{padding:'8px 14px',borderRadius:'8px',background:'rgba(74,222,128,0.15)',border:'1px solid rgba(74,222,128,0.3)',fontSize:'12px',fontWeight:700,color:'#4ade80',flexShrink:0,whiteSpace:'nowrap'}}>
-                                Done
-                              </div>
-                            )}
+                            {/* Confirm / Update button */}
+                            <button
+                              onClick={()=>confirmBet(b.id)}
+                              disabled={saving===b.id}
+                              style={{padding:'8px 14px',borderRadius:'8px',border:'none',cursor:saving===b.id?'not-allowed':'pointer',fontWeight:700,fontSize:'12px',background:isConfirmed?'rgba(74,222,128,0.2)':'#f5c842',color:isConfirmed?'#4ade80':'#071f10',border:isConfirmed?'1px solid rgba(74,222,128,0.4)':'none',opacity:saving===b.id?0.5:1,flexShrink:0,whiteSpace:'nowrap'}}>
+                              {saving===b.id ? 'Saving...' : isConfirmed ? 'Update Odds' : 'Placed on SGPools'}
+                            </button>
                           </div>
                         </div>
                       );
