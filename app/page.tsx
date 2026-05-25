@@ -74,7 +74,11 @@ export default function Home() {
     setData(d); setBets(b); setBoard(lb);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+ useEffect(() => {
+    load();
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
+  }, [load]);
 
   const myBets = bets.filter((b:any) => b.playerName?.toLowerCase() === name.toLowerCase());
   const groupMatches = (g: string) => (data?.matches||[]).filter((m:any) => m.group === g);
@@ -389,7 +393,7 @@ export default function Home() {
                     {[
                       {l:'Total Staked',v:'$'+myStaked.toFixed(2),c:'#f0ede4'},
                       {l:'Winnings',v:'$'+myWinnings.toFixed(2),c:'#4ade80'},
-                      {l:'Net P&L',v:(myNet>=0?'+$':'$')+Math.abs(myNet).toFixed(2),c:myNet>=0?'#4ade80':'#f87171'},
+                     {l:'Net P&L',v:mySettled.length===0?'-':(myNet>=0?'+$':'$')+Math.abs(myNet).toFixed(2),c:myNet>=0?'#4ade80':'#f87171'},
                     ].map(x=>(
                       <div key={x.l} style={{textAlign:'center',padding:'10px',borderRadius:'10px',background:'rgba(255,255,255,0.04)'}}>
                         <div style={{fontWeight:900,fontSize:'16px',color:x.c}}>{x.v}</div>
