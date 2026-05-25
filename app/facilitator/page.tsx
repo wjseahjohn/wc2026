@@ -321,7 +321,7 @@ export default function FacilitatorPage() {
                             <button
                               onClick={()=>confirmBet(b.id)}
                               disabled={saving===b.id}
-                              style={{padding:'8px 14px',borderRadius:'8px',border:'none',cursor:saving===b.id?'not-allowed':'pointer',fontWeight:700,fontSize:'12px',background:isConfirmed?'rgba(74,222,128,0.2)':'#f5c842',color:isConfirmed?'#4ade80':'#071f10',border:isConfirmed?'1px solid rgba(74,222,128,0.4)':'none',opacity:saving===b.id?0.5:1,flexShrink:0,whiteSpace:'nowrap'}}>
+                              style={{padding:'8px 14px',borderRadius:'8px',border:isConfirmed?'1px solid rgba(74,222,128,0.4)':'1px solid transparent',cursor:saving===b.id?'not-allowed':'pointer',fontWeight:700,fontSize:'12px',background:isConfirmed?'rgba(74,222,128,0.2)':'#f5c842',color:isConfirmed?'#4ade80':'#071f10',opacity:saving===b.id?0.5:1,flexShrink:0,whiteSpace:'nowrap'}}>
                               {saving===b.id ? 'Saving...' : isConfirmed ? 'Update Odds' : 'Placed on SGPools'}
                             </button>
                           </div>
