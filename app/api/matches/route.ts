@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getResults, setResult } from '@/lib/db';
-import { MATCHES, WINNERS, SCORERS } from '@/lib/data';
+import { MATCHES } from '@/lib/data';
 
 export async function GET() {
   const results = await getResults();
-  return NextResponse.json({ matches: MATCHES, winners: WINNERS, scorers: SCORERS, results });
+  return NextResponse.json({ matches: MATCHES, results });
 }
 
 export async function POST(req: NextRequest) {
