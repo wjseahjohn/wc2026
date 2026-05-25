@@ -85,24 +85,31 @@ export default function Home() {
   async function placeBets() {
     if (!namedIn || slip.length === 0) return;
     setSubmitting(true);
-    for (const item of slip) {
-      await fetch('/api/bets', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({
-          playerName: name,
-          betType: item.betType,
-          targetId: item.targetId,
-          selection: item.selection,
-          odds: 1,
-          stake: stakes[item.targetId] || 10,
-        }),
-      });
+    try {
+      for (const item of slip) {
+        const stakeAmt = stakes[item.targetId] || 0;
+        await fetch('/api/bets', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            playerName: name,
+            betType: item.betType,
+            targetId: item.targetId,
+            selection: item.selection,
+            odds: 1,
+            stake: stakeAmt,
+          }),
+        });
+      }
+      setToast('🎉 ' + slip.length + ' bet' + (slip.length>1?'s':'') + ' submitted! Pending SGPools confirmation.');
+      setSlip([]); setStakes({}); setSlipOpen(false);
+      load();
+      setTimeout(() => setToast(''), 5000);
+    } catch(e) {
+      setToast('❌ Something went wrong. Try again.');
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
-    setToast(`🎉 ${slip.length} bet${slip.length>1?'s':''} placed! Good luck ${name}!`);
-    setSlip([]); setStakes({}); setSlipOpen(false);
-    load(); setTimeout(() => setToast(''), 4000);
   }
 
   const s = (id: string) => slip.find(x => x.targetId === id);
@@ -517,8 +524,72 @@ export default function Home() {
         )}
       </div>
 
-      {/* Bet Slip */}
+     {/* Bet Slip */}
       {slip.length > 0 && (
+        <div style={{position:'fixed',bottom:'16px',left:0,right:0,zIndex:50,maxWidth:'600px',margin:'0 auto',padding:'0 16px'}}>
+          <div style={{background:'linear-gradient(135deg,#1a2f1e,#0d1f10)',border:'1px solid rgba(245,200,66,0.35)',borderRadius:'16px',overflow:'hidden',boxShadow:'0 8px 32px rgba(0,0,0,0.6)'}}>
+            <button onClick={()=>setSlipOpen(!slipOpen)} style={{width:'100%',padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:'rgba(245,200,66,0.08)',border:'none',cursor:'pointer',color:'#f0ede4'}}>
+              <span style={{fontWeight:900,color:'#f5c842',letterSpacing:'1px',fontSize:'14px'}}>⚡ BET SLIP ({slip.length})</span>
+              <span style={{color:'#f5c842',fontWeight:700,fontSize:'13px'}}>{slipOpen?'▼':'▲'}</span>
+            </button>
+            {slipOpen && (
+              <div style={{padding:'12px 16px'}}>
+                <div style={{display:'flex',flexDirection:'column',gap:'10px',maxHeight:'220px',overflowY:'auto',marginBottom:'12px'}}>
+                  {slip.map(item => (
+                    <div key={item.targetId} style={{display:'flex',alignItems:'flex-start',gap:'8px',padding:'8px',borderRadius:'8px',background:'rgba(255,255,255,0.04)'}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:'10px',color:'#a0a09a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.label}</div>
+                        <div style={{fontWeight:700,color:'#f5c842',fontSize:'13px'}}>{item.selectionLabel}</div>
+                        <div style={{fontSize:'10px',color:'#a0a09a'}}>{BET_CAT_LABELS[item.betType as BetCategory] || item.betType}</div>
+                      </div>
+                      <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'4px',flexShrink:0}}>
+                        <button onClick={()=>removeSlip(item.targetId)} style={{background:'none',border:'none',color:'#a0a09a',cursor:'pointer',fontSize:'16px',lineHeight:1}}>×</button>
+                        <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
+                          <span style={{fontSize:'10px',color:'#a0a09a'}}>SGD $</span>
+                          <input type="number" min={1} max={9999} step={1}
+                            value={stakes[item.targetId] || ''}
+                            onChange={e=>setStakes(p=>({...p,[item.targetId]:Number(e.target.value)}))}
+                            placeholder="amt"
+                            style={{width:'56px',padding:'4px 6px',borderRadius:'6px',border:'1px solid rgba(245,200,66,0.3)',background:'rgba(7,31,16,0.8)',color:'#f5c842',fontWeight:700,fontSize:'13px',textAlign:'center',outline:'none'}} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total */}
+                {Object.keys(stakes).length > 0 && (
+                  <div style={{padding:'8px 10px',borderRadius:'8px',background:'rgba(245,200,66,0.08)',marginBottom:'10px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <span style={{fontSize:'12px',color:'#a0a09a'}}>Total stake:</span>
+                    <span style={{fontWeight:900,fontSize:'16px',color:'#f5c842'}}>
+                      SGD ${Object.values(stakes).reduce((s,v)=>s+(v||0),0).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                <div style={{fontSize:'11px',color:'#a0a09a',marginBottom:'8px',padding:'6px 8px',borderRadius:'6px',background:'rgba(255,255,255,0.04)'}}>
+                  ℹ️ Bets will show as <span style={{color:'#e8901a'}}>Pending</span> until the facilitator confirms with SGPools
+                </div>
+
+                {!namedIn ? (
+                  <div style={{textAlign:'center',color:'#e8901a',fontSize:'13px'}}>Enter your name first</div>
+                ) : (
+                  <div style={{display:'flex',gap:'8px'}}>
+                    <button onClick={()=>{setSlip([]);setStakes({});}} style={{padding:'10px 14px',borderRadius:'10px',border:'1px solid rgba(255,255,255,0.15)',background:'transparent',color:'#a0a09a',cursor:'pointer',fontSize:'13px'}}>Clear</button>
+                    <button onClick={placeBets} disabled={submitting}
+                      style={{flex:1,padding:'12px',borderRadius:'10px',border:'none',cursor:submitting?'not-allowed':'pointer',fontWeight:900,fontSize:'14px',letterSpacing:'1px',background:submitting?'rgba(245,200,66,0.4)':'#f5c842',color:'#071f10',transition:'all 0.2s'}}>
+                      {submitting ? 'PLACING...' : 'PLACE ' + slip.length + ' BET' + (slip.length>1?'S':'')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
         <div style={{position:'fixed',bottom:'16px',left:0,right:0,zIndex:50,maxWidth:'600px',margin:'0 auto',padding:'0 16px'}}>
           <div style={{background:'linear-gradient(135deg,#1a2f1e,#0d1f10)',border:'1px solid rgba(245,200,66,0.35)',borderRadius:'16px',overflow:'hidden',boxShadow:'0 8px 32px rgba(0,0,0,0.6)'}}>
             <button onClick={()=>setSlipOpen(!slipOpen)} style={{width:'100%',padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:'rgba(245,200,66,0.08)',border:'none',cursor:'pointer',color:'#f0ede4'}}>
