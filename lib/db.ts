@@ -1,10 +1,10 @@
 import { Redis } from '@upstash/redis';
- 
+
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
- 
+
 export interface Bet {
   id: string;
   playerName: string;
@@ -19,36 +19,45 @@ export interface Bet {
   confirmedBySGPools: boolean;
   createdAt: string;
 }
- 
+
 const BETS_KEY = 'wc2026:bets';
 const RESULTS_KEY = 'wc2026:results';
- 
+
 export async function getAllBets(): Promise<Bet[]> {
   try {
     const data = await redis.get<Bet[]>(BETS_KEY);
     return data || [];
   } catch { return []; }
 }
- 
+
 export async function addBet(b: Omit<Bet, 'id'|'createdAt'|'settled'|'actualWin'|'confirmedBySGPools'>): Promise<Bet> {
   const bet: Bet = { ...b, id: 'b_'+Date.now(), createdAt: new Date().toISOString(), settled: false, actualWin: 0, confirmedBySGPools: false };
   const all = await getAllBets();
   await redis.set(BETS_KEY, [...all, bet]);
   return bet;
 }
- 
-export async function confirmBets(betIds: string[]): Promise<void> {
+
+export async function confirmBets(betIds: string[], oddsMap: Record<string,number> = {}): Promise<void> {
   const all = await getAllBets();
-  await redis.set(BETS_KEY, all.map(b => betIds.includes(b.id) ? { ...b, confirmedBySGPools: true } : b));
+  await redis.set(BETS_KEY, all.map(b => {
+    if (!betIds.includes(b.id)) return b;
+    const newOdds = oddsMap[b.id] || b.odds;
+    return {
+      ...b,
+      confirmedBySGPools: true,
+      odds: newOdds,
+      potentialWin: b.stake > 0 && newOdds > 0 ? b.stake * newOdds : b.potentialWin,
+    };
+  }));
 }
- 
+
 export async function getResults(): Promise<Record<string, string>> {
   try {
     const data = await redis.get<Record<string, string>>(RESULTS_KEY);
     return data || {};
   } catch { return {}; }
 }
- 
+
 export async function setResult(targetId: string, result: string): Promise<void> {
   const results = await getResults();
   results[targetId] = result;
@@ -63,12 +72,12 @@ export async function setResult(targetId: string, result: string): Promise<void>
   });
   await redis.set(BETS_KEY, updated);
 }
- 
+
 export interface PlayerStats {
   name: string; bets: number; won: number; lost: number; pending: number;
   staked: number; winnings: number; net: number;
 }
- 
+
 export async function getLeaderboard(): Promise<PlayerStats[]> {
   const all = await getAllBets();
   const map: Record<string, PlayerStats> = {};
