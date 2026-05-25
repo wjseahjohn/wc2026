@@ -15,7 +15,7 @@ const BET_TYPES = [
 ];
 
 interface FBet {
-  id: string; playerName: string; matchId: string; matchLabel: string;
+  id: string; dbId?: string; playerName: string; matchId: string; matchLabel: string;
   betType: string; selection: string; odds: number; stake: number;
   potentialWin: number; placed: boolean; createdAt: string;
 }
@@ -25,14 +25,16 @@ export default function FacilitatorPage() {
   const [authed, setAuthed] = useState(false);
   const [fbets, setFbets] = useState<FBet[]>([]);
   const [data, setData] = useState<any>(null);
-  const [view, setView] = useState<'add'|'byMatch'|'byPlayer'>('add');
+  const [view, setView] = useState<'add'|'confirm'|'byMatch'|'byPlayer'>('add');
   const [activeGroup, setActiveGroup] = useState('A');
   const [msg, setMsg] = useState('');
   const [form, setForm] = useState({playerName:'',matchId:'',betType:'1x2',selection:'',odds:'',stake:''});
+  const [dbBets, setDbBets] = useState<any[]>([]);
 
   useEffect(() => {
     if (authed) {
       fetch('/api/matches').then(r=>r.json()).then(setData);
+      fetch('/api/bets').then(r=>r.json()).then(setDbBets);
       const s = localStorage.getItem('fbets');
       if (s) setFbets(JSON.parse(s));
     }
@@ -59,7 +61,20 @@ export default function FacilitatorPage() {
     setTimeout(()=>setMsg(''), 3000);
   }
 
-  function toggle(id: string) { save(fbets.map(b => b.id===id ? {...b, placed:!b.placed} : b)); }
+  async function toggle(id: string) {
+    const bet = fbets.find(b=>b.id===id);
+    if (!bet) return;
+    const newPlaced = !bet.placed;
+    save(fbets.map(b => b.id===id ? {...b, placed:newPlaced} : b));
+    // Sync to database so players see confirmation status
+    if (newPlaced && bet.dbId) {
+      await fetch('/api/bets', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ action: 'confirm', betIds: [bet.dbId] }),
+      });
+    }
+  }
   function del(id: string) { if (confirm('Delete this bet?')) save(fbets.filter(b=>b.id!==id)); }
 
   function exportCSV() {
@@ -139,7 +154,7 @@ export default function FacilitatorPage() {
 
           {/* Tabs */}
           <div style={{display:'flex',gap:'4px'}}>
-            {[{id:'add',l:'➕ Add Bet'},{id:'byMatch',l:'🗓 By Match'},{id:'byPlayer',l:'👥 By Player'}].map(t=>(
+            {[{id:'add',l:'➕ Add Bet'},{id:'confirm',l:'✓ Confirm'},{id:'byMatch',l:'🗓 By Match'},{id:'byPlayer',l:'👥 By Player'}].map(t=>(
               <button key={t.id} onClick={()=>setView(t.id as any)}
                 style={{padding:'6px 12px',borderRadius:'20px',border:'none',cursor:'pointer',fontSize:'12px',fontWeight:600,background:view===t.id?'#f5c842':'transparent',color:view===t.id?'#071f10':'#a0a09a'}}>
                 {t.l}
@@ -232,6 +247,61 @@ export default function FacilitatorPage() {
             <button onClick={addBet} style={{padding:'14px',borderRadius:'12px',border:'none',cursor:'pointer',fontWeight:900,fontSize:'16px',letterSpacing:'1px',background:'#f5c842',color:'#071f10'}}>
               ➕ ADD BET
             </button>
+          </div>
+        )}
+
+        {/* CONFIRM BETS FROM DB */}
+        {view === 'confirm' && (
+          <div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'14px'}}>
+              <div>
+                <div style={{fontSize:'20px',fontWeight:900,color:'#f5c842',letterSpacing:'1px'}}>CONFIRM WITH SGPOOLS</div>
+                <div style={{fontSize:'12px',color:'#a0a09a'}}>Mark each bet as placed on SGPools</div>
+              </div>
+              <button onClick={()=>fetch('/api/bets').then(r=>r.json()).then(setDbBets)}
+                style={{padding:'6px 12px',borderRadius:'8px',border:'1px solid rgba(255,255,255,0.2)',background:'transparent',color:'#a0a09a',cursor:'pointer',fontSize:'12px'}}>
+                Refresh
+              </button>
+            </div>
+            {dbBets.length === 0 ? (
+              <div style={{padding:'40px',textAlign:'center',color:'#a0a09a',background:'rgba(255,255,255,0.04)',borderRadius:'12px'}}>No bets in database yet.</div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                {/* Group by player */}
+                {Array.from(new Set(dbBets.map((b:any)=>b.playerName))).map((player:any) => {
+                  const pb = dbBets.filter((b:any)=>b.playerName===player);
+                  const confirmed = pb.filter((b:any)=>b.confirmedBySGPools).length;
+                  return (
+                    <div key={player} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'12px',overflow:'hidden'}}>
+                      <div style={{padding:'10px 14px',background:'rgba(245,200,66,0.08)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                        <div style={{fontWeight:900,fontSize:'16px',color:'#f5c842'}}>{player}</div>
+                        <div style={{fontSize:'11px',color:'#a0a09a'}}>{confirmed}/{pb.length} confirmed</div>
+                      </div>
+                      {pb.map((b:any) => (
+                        <div key={b.id} style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,0.05)',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px',background:b.confirmedBySGPools?'rgba(74,222,128,0.04)':'transparent'}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontWeight:600,fontSize:'13px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.selection}</div>
+                            <div style={{fontSize:'11px',color:'#a0a09a'}}>
+                              {b.betType}
+                              {b.stake > 0 && <span style={{color:'#4ade80',marginLeft:'6px'}}>SGD ${b.stake}</span>}
+                            </div>
+                          </div>
+                          <button
+                            onClick={async ()=>{
+                              await fetch('/api/bets', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'confirm',betIds:[b.id]})});
+                              fetch('/api/bets').then(r=>r.json()).then(setDbBets);
+                            }}
+                            disabled={b.confirmedBySGPools}
+                            style={{padding:'5px 10px',borderRadius:'8px',border:'1px solid '+(b.confirmedBySGPools?'rgba(74,222,128,0.4)':'rgba(232,144,26,0.4)'),background:b.confirmedBySGPools?'rgba(74,222,128,0.15)':'transparent',color:b.confirmedBySGPools?'#4ade80':'#e8901a',cursor:b.confirmedBySGPools?'default':'pointer',fontWeight:700,fontSize:'11px',whiteSpace:'nowrap',flexShrink:0}}>
+                            {b.confirmedBySGPools ? '✓ Confirmed' : 'Confirm'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
