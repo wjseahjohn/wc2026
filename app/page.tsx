@@ -74,7 +74,7 @@ export default function Home() {
     setData(d); setBets(b); setBoard(lb);
   }, []);
 
- useEffect(() => {
+  useEffect(() => {
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
@@ -142,7 +142,7 @@ export default function Home() {
   const myWon = mySettled.filter((b:any) => b.actualWin > 0);
   const myLost = mySettled.filter((b:any) => b.actualWin === 0);
   const myPending = myBets.filter((b:any) => !b.settled);
-  const myStaked = myBets.filter((b:any)=>b.confirmedBySGPools||b.settled).reduce((s:number,b:any)=>s+(b.stake||0),0);
+  const myStaked = myBets.filter((b:any)=>b.settled).reduce((s:number,b:any)=>s+(b.stake||0),0);
   const myWinnings = myWon.reduce((s:number,b:any)=>s+(b.actualWin||0),0);
   const myNet = myWinnings - myStaked;
 
@@ -368,6 +368,15 @@ export default function Home() {
               {namedIn && <div style={{fontSize:'12px',color:'#a0a09a'}}>Personal scoresheet for <span style={{color:'#f5c842'}}>{name}</span></div>}
             </div>
 
+            {/* Win celebration banner */}
+            {namedIn && myWon.length > 0 && (
+              <div style={{background:'linear-gradient(135deg,rgba(74,222,128,0.2),rgba(74,222,128,0.08))',border:'2px solid rgba(74,222,128,0.5)',borderRadius:'14px',padding:'16px',marginBottom:'16px',textAlign:'center'}}>
+                <div style={{fontSize:'32px',marginBottom:'4px'}}>🎉</div>
+                <div style={{fontWeight:900,fontSize:'20px',color:'#4ade80',marginBottom:'2px'}}>You have {myWon.length} winning bet{myWon.length>1?'s':''}!</div>
+                <div style={{fontSize:'13px',color:'#a0a09a'}}>Total winnings: SGD ${myWinnings.toFixed(2)}</div>
+              </div>
+            )}
+
             {!namedIn ? (
               <div style={{padding:'40px',textAlign:'center',color:'#a0a09a',background:'rgba(255,255,255,0.04)',borderRadius:'12px'}}>Enter your name to view your bets</div>
             ) : myBets.length === 0 ? (
@@ -393,7 +402,7 @@ export default function Home() {
                     {[
                       {l:'Total Staked',v:'$'+myStaked.toFixed(2),c:'#f0ede4'},
                       {l:'Winnings',v:'$'+myWinnings.toFixed(2),c:'#4ade80'},
-                     {l:'Net P&L',v:mySettled.length===0?'-':(myNet>=0?'+$':'$')+Math.abs(myNet).toFixed(2),c:myNet>=0?'#4ade80':'#f87171'},
+                      {l:'Net P&L',v:mySettled.length===0?'-':(myNet>=0?'+$':'$')+Math.abs(myNet).toFixed(2),c:mySettled.length===0?'#a0a09a':myNet>=0?'#4ade80':'#f87171'},
                     ].map(x=>(
                       <div key={x.l} style={{textAlign:'center',padding:'10px',borderRadius:'10px',background:'rgba(255,255,255,0.04)'}}>
                         <div style={{fontWeight:900,fontSize:'16px',color:x.c}}>{x.v}</div>
@@ -422,7 +431,7 @@ export default function Home() {
                               <span style={{fontSize:'10px',padding:'2px 8px',borderRadius:'6px',background:pill.bg,color:pill.color,fontWeight:700}}>{pill.text}</span>
                             </div>
                             <div style={{fontWeight:700,fontSize:'14px',marginBottom:'2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.selection}</div>
-                            <div style={{fontSize:'12px',color:'#f0ede4',marginBottom:'2px'}}>{(()=>{const mid=b.targetId?.split('_')[0];const m=(data?.matches||[]).find((x:any)=>x.id===mid);return m?m.homeFlag+' '+m.homeTeam+' vs '+m.awayFlag+' '+m.awayTeam:'';})()}</div>
+                            <div style={{fontSize:'12px',color:'#f0ede4',marginBottom:'2px'}}>{(()=>{const mid=b.targetId?.split('_')[0];const m=(data?.matches||[]).find((x:any)=>x.id===mid);return m?m.homeTeam+' vs '+m.awayTeam:'';})()}</div>
                             <div style={{fontSize:'11px',color:'#a0a09a'}}>{new Date(b.createdAt).toLocaleDateString('en-SG',{day:'numeric',month:'short'})}</div>
                           </div>
                           <div style={{textAlign:'right',flexShrink:0}}>
