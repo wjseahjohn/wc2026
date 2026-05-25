@@ -33,13 +33,21 @@ const TOTAL_GOALS = [
   {v:'4-5',l:'4 - 5 Goals'},{v:'6+',l:'6+ Goals'},
 ];
 
-const BET_CAT_LABELS: Record<string,string> = {
-  '1x2':'1X2','ou':'Over/Under','btts':'BTTS',
-  'htft':'HT/FT','score':'Correct Score','goals':'Total Goals',
-  'ou_over':'Over/Under','ou_under':'Over/Under',
-  'btts_yes':'BTTS','btts_no':'BTTS','total_goals':'Total Goals',
-  'correct_score':'Correct Score','winner':'Tournament Winner','scorer':'Top Scorer',
+const BET_LABELS: Record<string,string> = {
+  '1x2':'1X2','ou':'O/U','btts':'BTTS','htft':'HT/FT',
+  'score':'Score','goals':'Goals','ou_over':'O/U','ou_under':'O/U',
+  'btts_yes':'BTTS','btts_no':'BTTS','total_goals':'Goals',
+  'correct_score':'Score','winner':'Winner','scorer':'Scorer',
 };
+
+function statusPill(b: any) {
+  if (b.settled) {
+    const won = b.actualWin > 0;
+    return { text: won ? 'WON' : 'LOST', bg: won ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)', color: won ? '#4ade80' : '#f87171' };
+  }
+  if (b.confirmedBySGPools) return { text: 'Confirmed', bg: 'rgba(59,130,246,0.2)', color: '#60a5fa' };
+  return { text: 'Pending', bg: 'rgba(232,144,26,0.2)', color: '#e8901a' };
+}
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>('matches');
@@ -103,7 +111,6 @@ export default function Home() {
           }),
         });
       }
-      const n = slip.length;
       setToast('Bets submitted! Pending SGPools confirmation.');
       setSlip([]); setStakes({}); setSlipOpen(false);
       load();
@@ -126,6 +133,15 @@ export default function Home() {
   const uniquePlayers: string[] = [];
   bets.forEach((b:any) => { if (b.playerName && !uniquePlayers.includes(b.playerName)) uniquePlayers.push(b.playerName); });
 
+  // My bets stats
+  const mySettled = myBets.filter((b:any) => b.settled);
+  const myWon = mySettled.filter((b:any) => b.actualWin > 0);
+  const myLost = mySettled.filter((b:any) => b.actualWin === 0);
+  const myPending = myBets.filter((b:any) => !b.settled);
+  const myStaked = myBets.filter((b:any)=>b.confirmedBySGPools||b.settled).reduce((s:number,b:any)=>s+(b.stake||0),0);
+  const myWinnings = myWon.reduce((s:number,b:any)=>s+(b.actualWin||0),0);
+  const myNet = myWinnings - myStaked;
+
   if (!data) return (
     <div style={{minHeight:'100vh',background:'#071f10',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'16px'}}>
       <div style={{fontSize:'64px'}}>⚽</div>
@@ -141,7 +157,7 @@ export default function Home() {
         <div style={{maxWidth:'600px',margin:'0 auto'}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
             <div>
-              <div style={{fontSize:'20px',fontWeight:900,color:'#f5c842',letterSpacing:'2px'}}>⚽ WC2026 BETS</div>
+              <div style={{fontSize:'20px',fontWeight:900,color:'#f5c842',letterSpacing:'2px'}}>WC2026 BETS</div>
               <div style={{fontSize:'11px',color:'#a0a09a'}}>Family Edition · All times SGT</div>
             </div>
             {namedIn && (
@@ -153,9 +169,9 @@ export default function Home() {
             )}
           </div>
           <div style={{display:'flex',gap:'4px',overflowX:'auto',paddingBottom:'2px',scrollbarWidth:'none'}}>
-            {([['matches','🗓 Matches'],['mybets','📋 My Bets'],['allbets','👀 All Bets'],['board','🥇 Board']] as [Tab,string][]).map(([id,label]) => (
-              <button key={id} onClick={()=>setTab(id)} style={{padding:'6px 10px',borderRadius:'20px',border:'none',cursor:'pointer',whiteSpace:'nowrap',fontSize:'12px',fontWeight:600,background:tab===id?'#f5c842':'transparent',color:tab===id?'#071f10':'#a0a09a',flexShrink:0}}>
-                {label}
+            {([['matches','Matches'],['mybets','My Bets'],['allbets','All Bets'],['board','Board']] as [Tab,string][]).map(([id,label]) => (
+              <button key={id} onClick={()=>setTab(id)} style={{padding:'6px 12px',borderRadius:'20px',border:'none',cursor:'pointer',whiteSpace:'nowrap',fontSize:'12px',fontWeight:600,background:tab===id?'#f5c842':'transparent',color:tab===id?'#071f10':'#a0a09a',flexShrink:0}}>
+                {label}{id==='mybets'&&myPending.length>0?' ('+myPending.length+')':''}
               </button>
             ))}
           </div>
@@ -259,7 +275,7 @@ export default function Home() {
 
                     {betCat === 'btts' && (
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px'}}>
-                        {[['btts-yes','Both Teams Score — Yes','btts_yes'],['btts-no','Both Teams Score — No','btts_no']].map(([sel,label,bt]) => {
+                        {[['btts-yes','Both Teams Score - Yes','btts_yes'],['btts-no','Both Teams Score - No','btts_no']].map(([sel,label,bt]) => {
                           const tid = m.id+'_'+sel; const active = !!s(tid);
                           return (
                             <button key={sel} disabled={!!result||!namedIn} onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:sel,selectionLabel:label,betType:bt})}
@@ -293,12 +309,12 @@ export default function Home() {
 
                     {betCat === 'score' && (
                       <div>
-                        <div style={{display:'flex',gap:'8px',marginBottom:'8px',padding:'8px',borderRadius:'8px',background:'rgba(255,255,255,0.05)'}}>
+                        <div style={{display:'flex',gap:'8px',marginBottom:'6px',padding:'8px',borderRadius:'8px',background:'rgba(255,255,255,0.05)'}}>
                           <div style={{flex:1,textAlign:'center',fontSize:'12px',fontWeight:700,color:'#4ade80'}}>{m.homeFlag} {m.homeTeam}</div>
                           <div style={{fontSize:'12px',color:'#a0a09a'}}>vs</div>
                           <div style={{flex:1,textAlign:'center',fontSize:'12px',fontWeight:700,color:'#f87171'}}>{m.awayFlag} {m.awayTeam}</div>
                         </div>
-                        <div style={{fontSize:'11px',color:'#a0a09a',marginBottom:'4px'}}>Green = {m.homeTeam} win · Yellow = Draw · Red = {m.awayTeam} win</div>
+                        <div style={{fontSize:'10px',color:'#a0a09a',marginBottom:'6px'}}>Green = {m.homeTeam} win · Yellow = Draw · Red = {m.awayTeam} win</div>
                         <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'5px'}}>
                           {CORRECT_SCORES.map(score => {
                             const tid = m.id+'_score_'+score; const active = !!s(tid);
@@ -307,7 +323,7 @@ export default function Home() {
                             const isDraw = h===a; const homeWin = h>a;
                             return (
                               <button key={score} disabled={!!result||!namedIn}
-                                onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:score,selectionLabel:m.homeTeam+' '+h+' - '+a+' '+m.awayTeam,betType:'correct_score'})}
+                                onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:score,selectionLabel:m.homeTeam+' '+h+'-'+a+' '+m.awayTeam,betType:'correct_score'})}
                                 style={{padding:'8px 2px',borderRadius:'8px',border:'1px solid '+(active?'#f5c842':isDraw?'rgba(245,200,66,0.25)':homeWin?'rgba(74,222,128,0.25)':'rgba(248,113,113,0.25)'),background:active?'rgba(245,200,66,0.2)':isDraw?'rgba(245,200,66,0.06)':homeWin?'rgba(74,222,128,0.06)':'rgba(248,113,113,0.06)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,textAlign:'center'}}>
                                 <div style={{fontWeight:900,fontSize:'14px',color:active?'#f5c842':isDraw?'#f5c842':homeWin?'#4ade80':'#f87171'}}>{score}</div>
                               </button>
@@ -345,46 +361,74 @@ export default function Home() {
           <div>
             <div style={{marginBottom:'16px'}}>
               <div style={{fontSize:'22px',fontWeight:900,color:'#f5c842',letterSpacing:'2px'}}>MY BETS</div>
-              {namedIn && <div style={{fontSize:'12px',color:'#a0a09a'}}>All bets for <span style={{color:'#f5c842'}}>{name}</span></div>}
+              {namedIn && <div style={{fontSize:'12px',color:'#a0a09a'}}>Personal scoresheet for <span style={{color:'#f5c842'}}>{name}</span></div>}
             </div>
+
             {!namedIn ? (
               <div style={{padding:'40px',textAlign:'center',color:'#a0a09a',background:'rgba(255,255,255,0.04)',borderRadius:'12px'}}>Enter your name to view your bets</div>
             ) : myBets.length === 0 ? (
               <div style={{padding:'40px',textAlign:'center',color:'#a0a09a',background:'rgba(255,255,255,0.04)',borderRadius:'12px'}}>No bets yet! Go to Matches to get started.</div>
             ) : (
               <>
-                <div style={{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'16px'}}>
+                {/* Scoresheet summary */}
+                <div style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(245,200,66,0.25)',borderRadius:'14px',padding:'16px',marginBottom:'16px'}}>
+                  <div style={{fontWeight:900,color:'#f5c842',marginBottom:'12px',fontSize:'14px',letterSpacing:'1px'}}>SCORESHEET</div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'12px'}}>
+                    {[
+                      {l:'Total Bets',v:myBets.length,c:'#f0ede4'},
+                      {l:'Won',v:myWon.length,c:'#4ade80'},
+                      {l:'Lost',v:myLost.length,c:'#f87171'},
+                    ].map(x=>(
+                      <div key={x.l} style={{textAlign:'center',padding:'10px',borderRadius:'10px',background:'rgba(255,255,255,0.04)'}}>
+                        <div style={{fontWeight:900,fontSize:'24px',color:x.c}}>{x.v}</div>
+                        <div style={{fontSize:'11px',color:'#a0a09a'}}>{x.l}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px'}}>
+                    {[
+                      {l:'Total Staked',v:'$'+myStaked.toFixed(2),c:'#f0ede4'},
+                      {l:'Winnings',v:'$'+myWinnings.toFixed(2),c:'#4ade80'},
+                      {l:'Net P&L',v:(myNet>=0?'+$':'$')+Math.abs(myNet).toFixed(2),c:myNet>=0?'#4ade80':'#f87171'},
+                    ].map(x=>(
+                      <div key={x.l} style={{textAlign:'center',padding:'10px',borderRadius:'10px',background:'rgba(255,255,255,0.04)'}}>
+                        <div style={{fontWeight:900,fontSize:'16px',color:x.c}}>{x.v}</div>
+                        <div style={{fontSize:'11px',color:'#a0a09a'}}>{x.l}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {myPending.length > 0 && (
+                    <div style={{marginTop:'10px',padding:'8px',borderRadius:'8px',background:'rgba(232,144,26,0.1)',border:'1px solid rgba(232,144,26,0.3)',textAlign:'center',fontSize:'12px',color:'#e8901a'}}>
+                      {myPending.length} bet{myPending.length>1?'s':''} pending SGPools confirmation
+                    </div>
+                  )}
+                </div>
+
+                {/* Bet list */}
+                <div style={{fontSize:'13px',fontWeight:700,color:'#a0a09a',marginBottom:'8px',letterSpacing:'1px'}}>ALL BETS</div>
+                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
                   {myBets.map((b: any) => {
-                    const won = b.settled && b.actualWin > 0;
-                    const lost = b.settled && b.actualWin === 0;
+                    const pill = statusPill(b);
                     return (
-                      <div key={b.id} style={{background:'rgba(255,255,255,0.05)',border:'1px solid '+(won?'rgba(74,222,128,0.3)':lost?'rgba(248,113,113,0.2)':'rgba(255,255,255,0.1)'),borderRadius:'10px',padding:'14px'}}>
+                      <div key={b.id} style={{background:'rgba(255,255,255,0.05)',border:'1px solid '+(b.settled&&b.actualWin>0?'rgba(74,222,128,0.25)':b.settled?'rgba(248,113,113,0.15)':'rgba(255,255,255,0.08)'),borderRadius:'10px',padding:'12px'}}>
                         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'8px'}}>
-                          <div style={{flex:1}}>
-                            <div style={{display:'flex',gap:'5px',marginBottom:'4px',flexWrap:'wrap'}}>
-                              <span style={{fontSize:'10px',padding:'2px 6px',borderRadius:'8px',background:'rgba(59,130,246,0.2)',color:'#60a5fa',fontWeight:600}}>{BET_CAT_LABELS[b.betType]||b.betType}</span>
-                              {b.settled
-                                ? <span style={{fontSize:'10px',padding:'2px 6px',borderRadius:'8px',background:won?'rgba(74,222,128,0.2)':'rgba(248,113,113,0.2)',color:won?'#4ade80':'#f87171',fontWeight:600}}>{won?'WON':'LOST'}</span>
-                                : <span style={{fontSize:'10px',padding:'2px 6px',borderRadius:'8px',background:'rgba(232,144,26,0.2)',color:'#e8901a',fontWeight:600}}>Pending SGPools</span>}
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{display:'flex',gap:'5px',marginBottom:'4px',flexWrap:'wrap',alignItems:'center'}}>
+                              <span style={{fontSize:'10px',padding:'2px 6px',borderRadius:'6px',background:'rgba(59,130,246,0.15)',color:'#60a5fa',fontWeight:600}}>{BET_LABELS[b.betType]||b.betType}</span>
+                              <span style={{fontSize:'10px',padding:'2px 8px',borderRadius:'6px',background:pill.bg,color:pill.color,fontWeight:700}}>{pill.text}</span>
                             </div>
-                            <div style={{fontWeight:700,fontSize:'14px',marginBottom:'2px'}}>{b.selection}</div>
-                            {b.stake > 0 && <div style={{fontSize:'12px',color:'#a0a09a'}}>SGD ${b.stake}</div>}
+                            <div style={{fontWeight:700,fontSize:'14px',marginBottom:'2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.selection}</div>
+                            <div style={{fontSize:'11px',color:'#a0a09a'}}>{new Date(b.createdAt).toLocaleDateString('en-SG',{day:'numeric',month:'short'})}</div>
                           </div>
-                          {b.settled && (
-                            <div style={{fontWeight:900,fontSize:'16px',color:won?'#4ade80':'#f87171'}}>{won?'✓ WON':'✗ LOST'}</div>
-                          )}
+                          <div style={{textAlign:'right',flexShrink:0}}>
+                            {b.stake > 0 && <div style={{fontSize:'12px',color:'#a0a09a',marginBottom:'2px'}}>Staked SGD ${b.stake}</div>}
+                            {b.settled && b.actualWin > 0 && <div style={{fontWeight:900,fontSize:'16px',color:'#4ade80'}}>+SGD ${b.actualWin.toFixed(2)}</div>}
+                            {b.settled && b.actualWin === 0 && b.stake > 0 && <div style={{fontWeight:700,fontSize:'14px',color:'#f87171'}}>-SGD ${b.stake.toFixed(2)}</div>}
+                          </div>
                         </div>
                       </div>
                     );
                   })}
-                </div>
-                <div style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(245,200,66,0.2)',borderRadius:'12px',padding:'16px'}}>
-                  <div style={{fontWeight:900,color:'#f5c842',marginBottom:'12px',letterSpacing:'1px'}}>SUMMARY</div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',textAlign:'center'}}>
-                    <div><div style={{fontWeight:900,fontSize:'22px'}}>{myBets.length}</div><div style={{fontSize:'11px',color:'#a0a09a'}}>Bets</div></div>
-                    <div><div style={{fontWeight:900,fontSize:'22px',color:'#4ade80'}}>{myBets.filter((b:any)=>b.settled&&b.actualWin>0).length}</div><div style={{fontSize:'11px',color:'#a0a09a'}}>Won</div></div>
-                    <div><div style={{fontWeight:900,fontSize:'22px',color:'#f87171'}}>{myBets.filter((b:any)=>b.settled&&b.actualWin===0).length}</div><div style={{fontSize:'11px',color:'#a0a09a'}}>Lost</div></div>
-                  </div>
                 </div>
               </>
             )}
@@ -427,26 +471,26 @@ export default function Home() {
                         <div style={{fontWeight:700,fontSize:'13px'}}>{m.homeFlag} {m.homeTeam} vs {m.awayFlag} {m.awayTeam}</div>
                         <div style={{fontSize:'11px',color:'#a0a09a'}}>{m.date} · {m.time} SGT</div>
                       </div>
-                      {matchBets.map((b:any) => (
-                        <div key={b.id} style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,0.05)',display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px'}}>
-                          <div style={{display:'flex',alignItems:'center',gap:'8px',flex:1,minWidth:0}}>
-                            <div style={{width:'28px',height:'28px',borderRadius:'50%',background:'rgba(245,200,66,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'12px',color:'#f5c842',flexShrink:0}}>
-                              {b.playerName?.[0]?.toUpperCase()}
+                      {matchBets.map((b:any) => {
+                        const pill = statusPill(b);
+                        return (
+                          <div key={b.id} style={{padding:'10px 14px',borderBottom:'1px solid rgba(255,255,255,0.05)',display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px'}}>
+                            <div style={{display:'flex',alignItems:'center',gap:'8px',flex:1,minWidth:0}}>
+                              <div style={{width:'28px',height:'28px',borderRadius:'50%',background:'rgba(245,200,66,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'12px',color:'#f5c842',flexShrink:0}}>
+                                {b.playerName?.[0]?.toUpperCase()}
+                              </div>
+                              <div style={{minWidth:0}}>
+                                <div style={{fontWeight:700,fontSize:'13px',color:'#f5c842'}}>{b.playerName}</div>
+                                <div style={{fontSize:'12px',color:'#f0ede4',fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.selection}</div>
+                              </div>
                             </div>
-                            <div style={{minWidth:0}}>
-                              <div style={{fontWeight:700,fontSize:'13px',color:'#f5c842'}}>{b.playerName}</div>
-                              <div style={{fontSize:'12px',color:'#f0ede4',fontWeight:600}}>{b.selection}</div>
+                            <div style={{display:'flex',alignItems:'center',gap:'5px',flexShrink:0}}>
+                              {b.stake > 0 && <span style={{fontSize:'11px',color:'#4ade80',fontWeight:700}}>${b.stake}</span>}
+                              <span style={{fontSize:'10px',padding:'2px 6px',borderRadius:'6px',background:pill.bg,color:pill.color,fontWeight:700}}>{pill.text}</span>
                             </div>
                           </div>
-                          <div style={{display:'flex',alignItems:'center',gap:'6px',flexShrink:0}}>
-                            {b.stake > 0 && <span style={{fontSize:'11px',color:'#4ade80',fontWeight:700}}>SGD ${b.stake}</span>}
-                            <span style={{fontSize:'10px',padding:'2px 6px',borderRadius:'8px',background:'rgba(59,130,246,0.2)',color:'#60a5fa',fontWeight:600}}>{BET_CAT_LABELS[b.betType]||b.betType}</span>
-                            {b.settled
-                              ? <span style={{fontSize:'10px',padding:'2px 6px',borderRadius:'8px',background:b.actualWin>0?'rgba(74,222,128,0.2)':'rgba(248,113,113,0.2)',color:b.actualWin>0?'#4ade80':'#f87171',fontWeight:600}}>{b.actualWin>0?'WON':'LOST'}</span>
-                              : <span style={{fontSize:'10px',padding:'2px 6px',borderRadius:'8px',background:'rgba(232,144,26,0.2)',color:'#e8901a',fontWeight:600}}>Pending</span>}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   );
                 })}
@@ -460,17 +504,35 @@ export default function Home() {
           <div>
             <div style={{marginBottom:'16px'}}>
               <div style={{fontSize:'22px',fontWeight:900,color:'#f5c842',letterSpacing:'2px'}}>LEADERBOARD</div>
-              <div style={{fontSize:'12px',color:'#a0a09a'}}>Family rankings</div>
+              <div style={{fontSize:'12px',color:'#a0a09a'}}>Family P&L rankings</div>
             </div>
             {board.length === 0 ? (
               <div style={{padding:'40px',textAlign:'center',color:'#a0a09a',background:'rgba(255,255,255,0.04)',borderRadius:'12px'}}>No settled bets yet!</div>
             ) : (
               <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
                 {board.map((p:any,i:number) => (
-                  <div key={p.name} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'12px',padding:'16px',display:'flex',alignItems:'center',gap:'16px'}}>
-                    <div style={{fontSize:'28px',minWidth:'36px',textAlign:'center'}}>{i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</div>
-                    <div style={{flex:1}}><div style={{fontWeight:700,fontSize:'16px'}}>{p.name}</div><div style={{fontSize:'12px',color:'#a0a09a'}}>{p.won}/{p.bets} correct</div></div>
-                    <div style={{textAlign:'right'}}><div style={{fontWeight:900,fontSize:'20px',color:p.net>=0?'#4ade80':'#f87171'}}>{p.won}</div><div style={{fontSize:'11px',color:'#a0a09a'}}>wins</div></div>
+                  <div key={p.name} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'12px',padding:'16px'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'10px'}}>
+                      <div style={{fontSize:'28px',minWidth:'36px',textAlign:'center'}}>{i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</div>
+                      <div style={{flex:1}}><div style={{fontWeight:700,fontSize:'16px'}}>{p.name}</div></div>
+                      <div style={{textAlign:'right'}}>
+                        <div style={{fontWeight:900,fontSize:'20px',color:p.net>=0?'#4ade80':'#f87171'}}>{p.net>=0?'+$':'$'}{Math.abs(p.net).toFixed(2)}</div>
+                        <div style={{fontSize:'11px',color:'#a0a09a'}}>net P&L</div>
+                      </div>
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:'6px',textAlign:'center'}}>
+                      {[
+                        {l:'Bets',v:p.bets,c:'#f0ede4'},
+                        {l:'Won',v:p.won,c:'#4ade80'},
+                        {l:'Lost',v:p.lost||0,c:'#f87171'},
+                        {l:'Pending',v:p.pending||0,c:'#e8901a'},
+                      ].map(x=>(
+                        <div key={x.l} style={{padding:'6px',borderRadius:'8px',background:'rgba(255,255,255,0.04)'}}>
+                          <div style={{fontWeight:700,fontSize:'14px',color:x.c}}>{x.v}</div>
+                          <div style={{fontSize:'10px',color:'#a0a09a'}}>{x.l}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -489,23 +551,23 @@ export default function Home() {
             </button>
             {slipOpen && (
               <div style={{padding:'12px 16px'}}>
-                <div style={{display:'flex',flexDirection:'column',gap:'10px',maxHeight:'240px',overflowY:'auto',marginBottom:'10px'}}>
+                <div style={{display:'flex',flexDirection:'column',gap:'8px',maxHeight:'240px',overflowY:'auto',marginBottom:'10px'}}>
                   {slip.map(item => (
                     <div key={item.targetId} style={{display:'flex',alignItems:'flex-start',gap:'8px',padding:'8px',borderRadius:'8px',background:'rgba(255,255,255,0.04)'}}>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:'10px',color:'#a0a09a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.label}</div>
-                        <div style={{fontWeight:700,color:'#f5c842',fontSize:'13px'}}>{item.selectionLabel}</div>
-                        <div style={{fontSize:'10px',color:'#a0a09a'}}>{BET_CAT_LABELS[item.betType]||item.betType}</div>
+                        <div style={{fontWeight:700,color:'#f5c842',fontSize:'13px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.selectionLabel}</div>
+                        <div style={{fontSize:'10px',color:'#a0a09a'}}>{BET_LABELS[item.betType]||item.betType}</div>
                       </div>
                       <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'4px',flexShrink:0}}>
-                        <button onClick={()=>removeSlip(item.targetId)} style={{background:'none',border:'none',color:'#a0a09a',cursor:'pointer',fontSize:'16px',lineHeight:'1'}}>x</button>
+                        <button onClick={()=>removeSlip(item.targetId)} style={{background:'none',border:'none',color:'#a0a09a',cursor:'pointer',fontSize:'16px',lineHeight:'1',padding:'0'}}>x</button>
                         <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
-                          <span style={{fontSize:'10px',color:'#a0a09a'}}>SGD $</span>
+                          <span style={{fontSize:'10px',color:'#a0a09a'}}>SGD</span>
                           <input type="number" min={1} max={9999} step={1}
                             value={stakes[item.targetId] || ''}
                             onChange={e=>setStakes(p=>({...p,[item.targetId]:Number(e.target.value)}))}
-                            placeholder="amt"
-                            style={{width:'60px',padding:'4px 6px',borderRadius:'6px',border:'1px solid rgba(245,200,66,0.3)',background:'rgba(7,31,16,0.8)',color:'#f5c842',fontWeight:700,fontSize:'13px',textAlign:'center',outline:'none'}} />
+                            placeholder="$"
+                            style={{width:'58px',padding:'4px 6px',borderRadius:'6px',border:'1px solid rgba(245,200,66,0.3)',background:'rgba(7,31,16,0.9)',color:'#f5c842',fontWeight:700,fontSize:'13px',textAlign:'center',outline:'none'}} />
                         </div>
                       </div>
                     </div>
@@ -514,7 +576,7 @@ export default function Home() {
 
                 {totalStake > 0 && (
                   <div style={{padding:'8px 10px',borderRadius:'8px',background:'rgba(245,200,66,0.08)',marginBottom:'8px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <span style={{fontSize:'12px',color:'#a0a09a'}}>Total stake:</span>
+                    <span style={{fontSize:'12px',color:'#a0a09a'}}>Total:</span>
                     <span style={{fontWeight:900,fontSize:'16px',color:'#f5c842'}}>SGD ${totalStake.toFixed(2)}</span>
                   </div>
                 )}
@@ -524,13 +586,13 @@ export default function Home() {
                 </div>
 
                 {!namedIn ? (
-                  <div style={{textAlign:'center',color:'#e8901a',fontSize:'13px'}}>Enter your name first</div>
+                  <div style={{textAlign:'center',color:'#e8901a',fontSize:'13px',padding:'8px'}}>Enter your name first</div>
                 ) : (
                   <div style={{display:'flex',gap:'8px'}}>
                     <button onClick={()=>{setSlip([]);setStakes({});}} style={{padding:'10px 14px',borderRadius:'10px',border:'1px solid rgba(255,255,255,0.15)',background:'transparent',color:'#a0a09a',cursor:'pointer',fontSize:'13px'}}>Clear</button>
                     <button onClick={placeBets} disabled={submitting}
                       style={{flex:1,padding:'12px',borderRadius:'10px',border:'none',cursor:submitting?'not-allowed':'pointer',fontWeight:900,fontSize:'14px',letterSpacing:'1px',background:submitting?'rgba(245,200,66,0.4)':'#f5c842',color:'#071f10'}}>
-                      {submitting ? 'PLACING...' : 'CONFIRM BETS'}
+                      {submitting ? 'SAVING...' : 'CONFIRM BETS'}
                     </button>
                   </div>
                 )}
