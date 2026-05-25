@@ -75,6 +75,20 @@ export default function FacilitatorPage() {
     loadAll();
   }
 
+  async function deleteBet(betId: string, label: string) {
+    if (!confirm('Delete this bet?\n' + label)) return;
+    setSaving(betId);
+    await fetch('/api/admin/reset', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ adminKey: key, deleteBetId: betId }),
+    });
+    setSaving('');
+    setMsg('Bet deleted');
+    setTimeout(()=>setMsg(''), 2000);
+    loadAll();
+  }
+
   function getMatchLabel(targetId: string) {
     const matchId = targetId.split('_')[0];
     const m = matches.find(x => x.id === matchId);
@@ -323,6 +337,13 @@ export default function FacilitatorPage() {
                               disabled={saving===b.id}
                               style={{padding:'8px 14px',borderRadius:'8px',border:isConfirmed?'1px solid rgba(74,222,128,0.4)':'1px solid transparent',cursor:saving===b.id?'not-allowed':'pointer',fontWeight:700,fontSize:'12px',background:isConfirmed?'rgba(74,222,128,0.2)':'#f5c842',color:isConfirmed?'#4ade80':'#071f10',opacity:saving===b.id?0.5:1,flexShrink:0,whiteSpace:'nowrap'}}>
                               {saving===b.id ? 'Saving...' : isConfirmed ? 'Update Odds' : 'Placed on SGPools'}
+                            </button>
+                            {/* Delete button */}
+                            <button
+                              onClick={()=>deleteBet(b.id, b.playerName+' — '+b.selection)}
+                              disabled={saving===b.id}
+                              style={{padding:'8px 10px',borderRadius:'8px',border:'1px solid rgba(248,113,113,0.3)',cursor:'pointer',fontWeight:700,fontSize:'12px',background:'rgba(248,113,113,0.1)',color:'#f87171',flexShrink:0}}>
+                              Del
                             </button>
                           </div>
                         </div>
