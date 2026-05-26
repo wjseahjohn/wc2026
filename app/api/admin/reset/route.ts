@@ -20,11 +20,16 @@ export async function POST(req: NextRequest) {
   // Delete single bet by ID
   if (deleteBetId) {
     const bets = await redis.get<any[]>('wc2026:bets') || [];
-    // Players can only delete their own unconfirmed bets
     const filtered = bets.filter((b:any) => {
-      if (b.id !== deleteBetId) return true;
-      if (isPlayerDelete) return b.playerName !== playerName || b.confirmedBySGPools;
-      return false; // admin can delete any
+      if (b.id !== deleteBetId) return true; // keep bets with different ID
+      if (isAdmin) return false; // admin can delete any matching bet
+      // Player can only delete their own unconfirmed bets
+      if (isPlayerDelete) {
+        const isOwner = b.playerName.toLowerCase() === playerName.toLowerCase();
+        const isUnconfirmed = !b.confirmedBySGPools;
+        return !(isOwner && isUnconfirmed); // delete if own + unconfirmed
+      }
+      return true; // keep if no permission
     });
     await redis.set('wc2026:bets', filtered);
     return NextResponse.json({ ok: true, deleted: bets.length - filtered.length });
