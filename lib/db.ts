@@ -51,7 +51,10 @@ export async function confirmBets(betIds: string[], oddsMap: Record<string,numbe
   await redis.set(BETS_KEY, all.map(b => {
     if (!betIds.includes(b.id)) return b;
     const newOdds = oddsMap[b.id] || b.odds;
-    return { ...b, confirmedBySGPools: true, odds: newOdds, potentialWin: b.stake > 0 && newOdds > 0 ? b.stake * newOdds : b.potentialWin };
+    const newPotential = b.stake > 0 && newOdds > 0 ? Math.round(b.stake * newOdds * 100) / 100 : b.potentialWin;
+    // If bet already won, recalculate actualWin with new odds
+    const newActualWin = b.settled && b.actualWin > 0 ? newPotential : b.actualWin;
+    return { ...b, confirmedBySGPools: true, odds: newOdds, potentialWin: newPotential, actualWin: newActualWin };
   }));
 }
 
