@@ -99,13 +99,19 @@ function didBetWin(bet: Bet, result: MatchResult): boolean {
   if (bt === 'btts_yes' || sel === 'btts-yes') return homeScore > 0 && awayScore > 0;
   if (bt === 'btts_no' || sel === 'btts-no') return homeScore === 0 || awayScore === 0;
 
-  // Total Goals
+  // Full Time Total Goals (exact)
   if (bt === 'total_goals') {
     const total = homeScore + awayScore;
-    if (sel === '0-1') return total <= 1;
-    if (sel === '2-3') return total >= 2 && total <= 3;
-    if (sel === '4-5') return total >= 4 && total <= 5;
-    if (sel === '6+') return total >= 6;
+    if (sel === '8+') return total >= 8;
+    return total === parseInt(sel);
+  }
+
+  // Half Time Total Goals (exact)
+  if (bt === 'ht_goals') {
+    const htTotal = htHomeScore + htAwayScore;
+    if (sel === 'ht5+') return htTotal >= 5;
+    const num = parseInt(sel.replace('ht',''));
+    return htTotal === num;
   }
 
   // HT/FT
