@@ -68,6 +68,7 @@ export default function Home() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState('');
   const [group, setGroup] = useState('A');
+  const [matchView, setMatchView] = useState<'group'|'date'>('date');
   const [betCat, setBetCat] = useState<BetCategory>('1x2');
   const [allBetsFilter, setAllBetsFilter] = useState('');
 
@@ -217,15 +218,29 @@ export default function Home() {
           <div>
             <div style={{marginBottom:'14px'}}>
               <div style={{fontSize:'22px',fontWeight:900,color:'#f5c842',letterSpacing:'2px'}}>GROUP STAGE</div>
-              <div style={{fontSize:'12px',color:'#a0a09a'}}>Pick a group, choose your bet type</div>
+              <div style={{fontSize:'12px',color:'#a0a09a'}}>Pick a view, choose your bet type</div>
             </div>
-            <div style={{display:'flex',gap:'4px',overflowX:'auto',marginBottom:'10px',paddingBottom:'4px',scrollbarWidth:'none'}}>
-              {GROUPS.map(g => (
-                <button key={g} onClick={()=>setGroup(g)} style={{padding:'7px 13px',borderRadius:'8px',border:'none',cursor:'pointer',fontWeight:700,flexShrink:0,fontSize:'13px',background:group===g?'#f5c842':'rgba(255,255,255,0.06)',color:group===g?'#071f10':'#a0a09a'}}>
-                  {g}
+
+            {/* View toggle */}
+            <div style={{display:'flex',gap:'6px',marginBottom:'10px'}}>
+              {[['date','By Date'],['group','By Group']].map(([v,l]) => (
+                <button key={v} onClick={()=>setMatchView(v as 'group'|'date')}
+                  style={{padding:'7px 16px',borderRadius:'20px',border:'none',cursor:'pointer',fontWeight:700,fontSize:'13px',background:matchView===v?'#f5c842':'rgba(255,255,255,0.06)',color:matchView===v?'#071f10':'#a0a09a'}}>
+                  {l}
                 </button>
               ))}
             </div>
+
+            {/* Group selector - only show in group view */}
+            {matchView === 'group' && (
+              <div style={{display:'flex',gap:'4px',overflowX:'auto',marginBottom:'10px',paddingBottom:'4px',scrollbarWidth:'none'}}>
+                {GROUPS.map(g => (
+                  <button key={g} onClick={()=>setGroup(g)} style={{padding:'7px 13px',borderRadius:'8px',border:'none',cursor:'pointer',fontWeight:700,flexShrink:0,fontSize:'13px',background:group===g?'#f5c842':'rgba(255,255,255,0.06)',color:group===g?'#071f10':'#a0a09a'}}>
+                    {g}
+                  </button>
+                ))}
+              </div>
+            )}
             <div style={{position:'sticky',top:'130px',zIndex:30,background:'rgba(7,31,16,0.97)',padding:'8px 0 10px 0',marginBottom:'8px',backdropFilter:'blur(8px)',borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
               <div style={{display:'flex',gap:'4px',overflowX:'auto',paddingBottom:'2px',scrollbarWidth:'none'}}>
                 {BET_CATS.map(c => (
@@ -236,7 +251,227 @@ export default function Home() {
               </div>
             </div>
 
-            <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+            {/* Date view - all matches sorted by date/time */}
+            {matchView === 'date' && (()=>{
+              const sorted = [...(data?.matches||[])].sort((a:any,b:any) => {
+                const da = new Date(a.date+'T'+a.time+':00+08:00').getTime();
+                const db = new Date(b.date+'T'+b.time+':00+08:00').getTime();
+                return da - db;
+              });
+              const byDate: Record<string,any[]> = {};
+              sorted.forEach((m:any) => { if(!byDate[m.date]) byDate[m.date]=[]; byDate[m.date].push(m); });
+              return (
+                <div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
+                  {Object.entries(byDate).map(([date, dayMatches]:[string,any[]]) => (
+                    <div key={date}>
+                      <div style={{fontSize:'13px',fontWeight:700,color:'#f5c842',marginBottom:'8px',padding:'6px 10px',background:'rgba(245,200,66,0.08)',borderRadius:'8px',letterSpacing:'1px'}}>
+                        {new Date(date+'T12:00:00').toLocaleDateString('en-SG',{weekday:'short',day:'numeric',month:'short'})}
+                      </div>
+                      <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                        {dayMatches.map((m:any) => {
+                          const result = data.results?.[m.id];
+                          return (
+                            <div key={m.id} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'12px',padding:'16px'}}>
+                              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}>
+                                <div>
+                                  <span style={{fontSize:'12px',fontWeight:700,color:'#f5c842'}}>{m.time} SGT</span>
+                                  <span style={{fontSize:'11px',color:'#a0a09a',marginLeft:'6px'}}>Group {m.group}</span>
+                                </div>
+                                <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                                  <span style={{fontSize:'11px',color:'#a0a09a'}}>{m.venue.split(',')[0]}</span>
+                                  {result && <span style={{fontSize:'11px',padding:'2px 8px',borderRadius:'20px',background:'rgba(74,222,128,0.15)',color:'#4ade80',fontWeight:600}}>SETTLED</span>}
+                                </div>
+                              </div>
+                              <div style={{display:'grid',gridTemplateColumns:'1fr auto 1fr',alignItems:'center',gap:'8px',marginBottom:'14px',textAlign:'center'}}>
+                                <div><div style={{fontSize:'22px'}}>{m.homeFlag}</div><div style={{fontWeight:700,fontSize:'13px'}}>{m.homeTeam}</div></div>
+                                <div style={{fontWeight:900,color:'#a0a09a',fontSize:'13px'}}>VS</div>
+                                <div><div style={{fontSize:'22px'}}>{m.awayFlag}</div><div style={{fontWeight:700,fontSize:'13px'}}>{m.awayTeam}</div></div>
+                              </div>
+                              {betCat === '1x2' && (
+                                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'6px'}}>
+                                  {[['home',m.homeTeam],['draw','Draw'],['away',m.awayTeam]].map(([sel,label]) => {
+                                    const active = s(m.id)?.selection === sel;
+                                    const won = result === sel;
+                                    return (
+                                      <button key={sel} disabled={!!result||!namedIn} onClick={()=>addSlip({targetId:m.id,label:m.homeTeam+' vs '+m.awayTeam,selection:sel,selectionLabel:String(label),betType:'1x2'})}
+                                        style={{padding:'10px 4px',borderRadius:'8px',border:'1px solid '+(won?'#4ade80':active?'#f5c842':'rgba(255,255,255,0.1)'),background:won?'rgba(74,222,128,0.15)':active?'rgba(245,200,66,0.15)':'rgba(255,255,255,0.04)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result&&!won?0.5:1,fontWeight:700,fontSize:'13px',color:active||won?'#f5c842':'#f0ede4'}}>
+                                        {label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              {betCat !== '1x2' && (
+                                <div style={{fontSize:'12px',color:'#a0a09a',textAlign:'center',padding:'8px'}}>
+                                  Switch to Group view for {betCat.toUpperCase()} bets on this match
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Group view */}
+            {matchView === 'group' && <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+              {groupMatches(group).map((m: any) => {
+                const result = data.results?.[m.id];
+                return (
+                  <div key={m.id} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'12px',padding:'16px'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
+                      <div>
+                        <span style={{fontSize:'12px',fontWeight:700,color:'#f5c842'}}>{m.date}</span>
+                        <span style={{fontSize:'12px',color:'#a0a09a'}}> · {m.time} SGT</span>
+                      </div>
+                      <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                        <span style={{fontSize:'11px',color:'#a0a09a'}}>{m.venue.split(',')[0]}</span>
+                        {result && <span style={{fontSize:'11px',padding:'2px 8px',borderRadius:'20px',background:'rgba(74,222,128,0.15)',color:'#4ade80',fontWeight:600}}>SETTLED</span>}
+                      </div>
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr auto 1fr',alignItems:'center',gap:'8px',marginBottom:'14px',textAlign:'center'}}>
+                      <div><div style={{fontSize:'26px'}}>{m.homeFlag}</div><div style={{fontWeight:700,fontSize:'13px'}}>{m.homeTeam}</div></div>
+                      <div style={{fontWeight:900,color:'#a0a09a',fontSize:'13px'}}>VS</div>
+                      <div><div style={{fontSize:'26px'}}>{m.awayFlag}</div><div style={{fontWeight:700,fontSize:'13px'}}>{m.awayTeam}</div></div>
+                    </div>
+
+                    {betCat === '1x2' && (
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'6px'}}>
+                        {[['home',m.homeTeam],['draw','Draw'],['away',m.awayTeam]].map(([sel,label]) => {
+                          const active = s(m.id)?.selection === sel;
+                          const won = result === sel;
+                          return (
+                            <button key={sel} disabled={!!result||!namedIn} onClick={()=>addSlip({targetId:m.id,label:m.homeTeam+' vs '+m.awayTeam,selection:sel,selectionLabel:String(label),betType:'1x2'})}
+                              style={{padding:'12px 4px',borderRadius:'8px',border:'1px solid '+(won?'#4ade80':active?'#f5c842':'rgba(255,255,255,0.1)'),background:won?'rgba(74,222,128,0.15)':active?'rgba(245,200,66,0.15)':'rgba(255,255,255,0.04)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result&&!won?0.5:1,fontWeight:700,fontSize:'13px',color:active||won?'#f5c842':'#f0ede4'}}>
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {betCat === 'ou' && (
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px'}}>
+                        {[['ou-over','Over 2.5','ou_over'],['ou-under','Under 2.5','ou_under']].map(([sel,label,bt]) => {
+                          const tid = m.id+'_'+sel; const active = !!s(tid);
+                          return (
+                            <button key={sel} disabled={!!result||!namedIn} onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:sel,selectionLabel:label,betType:bt})}
+                              style={{padding:'12px',borderRadius:'8px',border:'1px solid '+(active?'#f5c842':'rgba(255,255,255,0.1)'),background:active?'rgba(245,200,66,0.15)':'rgba(255,255,255,0.04)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,fontWeight:700,fontSize:'13px',color:active?'#f5c842':'#f0ede4'}}>
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {betCat === 'btts' && (
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px'}}>
+                        {[['btts-yes','Both Teams Score - Yes','btts_yes'],['btts-no','Both Teams Score - No','btts_no']].map(([sel,label,bt]) => {
+                          const tid = m.id+'_'+sel; const active = !!s(tid);
+                          return (
+                            <button key={sel} disabled={!!result||!namedIn} onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:sel,selectionLabel:label,betType:bt})}
+                              style={{padding:'12px',borderRadius:'8px',border:'1px solid '+(active?'#f5c842':'rgba(255,255,255,0.1)'),background:active?'rgba(245,200,66,0.15)':'rgba(255,255,255,0.04)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,fontWeight:700,fontSize:'13px',color:active?'#f5c842':'#f0ede4'}}>
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {betCat === 'htft' && (
+                      <div>
+                        <div style={{fontSize:'11px',color:'#a0a09a',marginBottom:'6px'}}>Halftime / Full Time Result</div>
+                        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'5px'}}>
+                          {HTFT_OPTIONS.map(opt => {
+                            const tid = m.id+'_htft_'+opt.v; const active = !!s(tid);
+                            const parts = opt.v.split('/');
+                            const htLabel = parts[0]==='1'?m.homeTeam:parts[0]==='2'?m.awayTeam:'Draw';
+                            const ftLabel = parts[1]==='1'?m.homeTeam:parts[1]==='2'?m.awayTeam:'Draw';
+                            return (
+                              <button key={opt.v} disabled={!!result||!namedIn} onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:opt.v,selectionLabel:htLabel+' / '+ftLabel,betType:'htft'})}
+                                style={{padding:'8px 4px',borderRadius:'8px',border:'1px solid '+(active?'#f5c842':'rgba(255,255,255,0.1)'),background:active?'rgba(245,200,66,0.15)':'rgba(255,255,255,0.04)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,textAlign:'center',fontWeight:600,fontSize:'11px',color:active?'#f5c842':'#f0ede4'}}>
+                                {htLabel}<br/><span style={{color:'#a0a09a',fontSize:'9px'}}>then</span><br/>{ftLabel}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {betCat === 'score' && (
+                      <div>
+                        <div style={{display:'flex',gap:'8px',marginBottom:'6px',padding:'8px',borderRadius:'8px',background:'rgba(255,255,255,0.05)'}}>
+                          <div style={{flex:1,textAlign:'center',fontSize:'12px',fontWeight:700,color:'#4ade80'}}>{m.homeFlag} {m.homeTeam}</div>
+                          <div style={{fontSize:'12px',color:'#a0a09a'}}>vs</div>
+                          <div style={{flex:1,textAlign:'center',fontSize:'12px',fontWeight:700,color:'#f87171'}}>{m.awayFlag} {m.awayTeam}</div>
+                        </div>
+                        <div style={{fontSize:'10px',color:'#a0a09a',marginBottom:'6px'}}>Green = {m.homeTeam} win · Yellow = Draw · Red = {m.awayTeam} win</div>
+                        <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'5px'}}>
+                          {CORRECT_SCORES.map(score => {
+                            const tid = m.id+'_score_'+score; const active = !!s(tid);
+                            const parts = score.split('-');
+                            const h = parseInt(parts[0]); const a = parseInt(parts[1]);
+                            const isDraw = h===a; const homeWin = h>a;
+                            return (
+                              <button key={score} disabled={!!result||!namedIn}
+                                onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:score,selectionLabel:m.homeTeam+' '+h+'-'+a+' '+m.awayTeam,betType:'correct_score'})}
+                                style={{padding:'8px 2px',borderRadius:'8px',border:'1px solid '+(active?'#f5c842':isDraw?'rgba(245,200,66,0.25)':homeWin?'rgba(74,222,128,0.25)':'rgba(248,113,113,0.25)'),background:active?'rgba(245,200,66,0.2)':isDraw?'rgba(245,200,66,0.06)':homeWin?'rgba(74,222,128,0.06)':'rgba(248,113,113,0.06)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,textAlign:'center'}}>
+                                <div style={{fontWeight:900,fontSize:'14px',color:active?'#f5c842':isDraw?'#f5c842':homeWin?'#4ade80':'#f87171'}}>{score}</div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {betCat === 'goals' && (
+                      <div>
+                        <div style={{fontSize:'11px',color:'#a0a09a',marginBottom:'6px'}}>Full Time Total Goals</div>
+                        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'6px'}}>
+                          {TOTAL_GOALS.map(opt => {
+                            const tid = m.id+'_goals_'+opt.v; const active = !!s(tid);
+                            return (
+                              <button key={opt.v} disabled={!!result||!namedIn} onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:opt.v,selectionLabel:'FT '+opt.l,betType:'total_goals'})}
+                                style={{padding:'10px 4px',borderRadius:'8px',border:'1px solid '+(active?'#f5c842':'rgba(255,255,255,0.1)'),background:active?'rgba(245,200,66,0.15)':'rgba(255,255,255,0.04)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,fontWeight:700,fontSize:'13px',color:active?'#f5c842':'#f0ede4',textAlign:'center'}}>
+                                {opt.l}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {betCat === 'htgoals' && (
+                      <div>
+                        <div style={{fontSize:'11px',color:'#a0a09a',marginBottom:'6px'}}>Half Time Total Goals</div>
+                        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'6px'}}>
+                          {HT_GOALS.map(opt => {
+                            const tid = m.id+'_htgoals_'+opt.v; const active = !!s(tid);
+                            return (
+                              <button key={opt.v} disabled={!!result||!namedIn} onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:opt.v,selectionLabel:'HT '+opt.l,betType:'ht_goals'})}
+                                style={{padding:'10px 4px',borderRadius:'8px',border:'1px solid '+(active?'#f5c842':'rgba(255,255,255,0.1)'),background:active?'rgba(245,200,66,0.15)':'rgba(255,255,255,0.04)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,fontWeight:700,fontSize:'13px',color:active?'#f5c842':'#f0ede4',textAlign:'center'}}>
+                                {opt.l}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Group view */}
+            {matchView === 'group' && <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
               {groupMatches(group).map((m: any) => {
                 const result = data.results?.[m.id];
                 return (
@@ -382,7 +617,7 @@ export default function Home() {
                   </div>
                 );
               })}
-            </div>
+            </div>}
           </div>
         )}
 
