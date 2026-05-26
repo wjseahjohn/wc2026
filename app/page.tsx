@@ -219,12 +219,14 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            <div style={{display:'flex',gap:'4px',marginBottom:'14px',overflowX:'auto',paddingBottom:'2px',scrollbarWidth:'none'}}>
-              {BET_CATS.map(c => (
-                <button key={c.id} onClick={()=>setBetCat(c.id)} style={{padding:'5px 12px',borderRadius:'20px',border:'1px solid '+(betCat===c.id?'#f5c842':'rgba(255,255,255,0.15)'),cursor:'pointer',fontWeight:700,flexShrink:0,fontSize:'12px',background:betCat===c.id?'rgba(245,200,66,0.15)':'transparent',color:betCat===c.id?'#f5c842':'#a0a09a'}}>
-                  {c.label}
-                </button>
-              ))}
+            <div style={{position:'sticky',top:'112px',zIndex:30,background:'rgba(7,31,16,0.97)',padding:'8px 0',marginBottom:'8px',backdropFilter:'blur(8px)'}}>
+              <div style={{display:'flex',gap:'4px',overflowX:'auto',paddingBottom:'2px',scrollbarWidth:'none'}}>
+                {BET_CATS.map(c => (
+                  <button key={c.id} onClick={()=>setBetCat(c.id)} style={{padding:'6px 14px',borderRadius:'20px',border:'1px solid '+(betCat===c.id?'#f5c842':'rgba(255,255,255,0.15)'),cursor:'pointer',fontWeight:700,flexShrink:0,fontSize:'12px',background:betCat===c.id?'rgba(245,200,66,0.15)':'transparent',color:betCat===c.id?'#f5c842':'#a0a09a'}}>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
