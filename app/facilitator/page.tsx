@@ -50,6 +50,21 @@ export default function FacilitatorPage() {
     localStorage.setItem('facilitator_odds', JSON.stringify(updated));
   }
 
+  async function resetResult(matchId: string, matchLabel: string) {
+    if (!confirm('Reset result for ' + matchLabel + '?\nThis will un-settle all bets for this match.')) return;
+    setSavingResult(matchId+'_reset');
+    await fetch('/api/admin/reset', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ adminKey: key, resetMatchId: matchId }),
+    });
+    setSavingResult('');
+    setMsg('Result reset! Bets unsettled.');
+    setScoreInput((p:any) => { const n = {...p}; delete n[matchId]; return n; });
+    loadAll();
+    setTimeout(()=>setMsg(''), 3000);
+  }
+
   function updateScore(matchId: string, field: string, val: string) {
     setScoreInput((p:any) => ({...p, [matchId]: {...(p[matchId]||{}), [field]: val === '' ? undefined : parseInt(val)}}));
   }
@@ -337,6 +352,12 @@ export default function FacilitatorPage() {
                               style={{padding:'10px 18px',borderRadius:'8px',border:'none',cursor:savingResult===m.id?'not-allowed':'pointer',fontWeight:700,fontSize:'13px',background:'#f5c842',color:'#071f10',opacity:savingResult===m.id?0.5:1,alignSelf:'flex-end',whiteSpace:'nowrap'}}>
                               {savingResult===m.id ? 'Saving...' : settled ? 'Update Result' : 'Save & Settle Bets'}
                             </button>
+                            {settled && (
+                              <button onClick={()=>resetResult(m.id, m.homeTeam+' vs '+m.awayTeam)} disabled={savingResult===m.id+'_reset'}
+                                style={{padding:'10px 14px',borderRadius:'8px',border:'1px solid rgba(248,113,113,0.4)',cursor:'pointer',fontWeight:700,fontSize:'13px',background:'rgba(248,113,113,0.1)',color:'#f87171',alignSelf:'flex-end',whiteSpace:'nowrap',opacity:savingResult===m.id+'_reset'?0.5:1}}>
+                                Reset
+                              </button>
+                            )}
                           </div>
                         </div>
                       );
