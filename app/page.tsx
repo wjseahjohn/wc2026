@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { GROUPS } from '@/lib/data';
 
 type Tab = 'matches' | 'mybets' | 'allbets' | 'board';
-type BetCategory = '1x2' | 'ou' | 'btts' | 'htft' | 'score' | 'goals';
+type BetCategory = '1x2' | 'ou' | 'btts' | 'htft' | 'score' | 'goals' | 'htgoals';
 
 interface SlipItem {
   targetId: string; label: string; selection: string;
@@ -29,8 +29,14 @@ const CORRECT_SCORES = [
 ];
 
 const TOTAL_GOALS = [
-  {v:'0-1',l:'0 - 1 Goals'},{v:'2-3',l:'2 - 3 Goals'},
-  {v:'4-5',l:'4 - 5 Goals'},{v:'6+',l:'6+ Goals'},
+  {v:'0',l:'0 Goals'},{v:'1',l:'1 Goal'},{v:'2',l:'2 Goals'},
+  {v:'3',l:'3 Goals'},{v:'4',l:'4 Goals'},{v:'5',l:'5 Goals'},
+  {v:'6',l:'6 Goals'},{v:'7',l:'7 Goals'},{v:'8+',l:'8+ Goals'},
+];
+
+const HT_GOALS = [
+  {v:'ht0',l:'0 Goals'},{v:'ht1',l:'1 Goal'},{v:'ht2',l:'2 Goals'},
+  {v:'ht3',l:'3 Goals'},{v:'ht4',l:'4 Goals'},{v:'ht5+',l:'5+ Goals'},
 ];
 
 const BET_LABELS: Record<string,string> = {
@@ -131,7 +137,8 @@ export default function Home() {
 
   const BET_CATS: {id: BetCategory; label: string}[] = [
     {id:'1x2',label:'1X2'},{id:'ou',label:'O/U'},{id:'btts',label:'BTTS'},
-    {id:'htft',label:'HT/FT'},{id:'score',label:'Score'},{id:'goals',label:'Goals'},
+    {id:'htft',label:'HT/FT'},{id:'score',label:'Score'},
+    {id:'goals',label:'FT Goals'},{id:'htgoals',label:'HT Goals'},
   ];
 
   const uniquePlayers: string[] = [];
@@ -341,13 +348,30 @@ export default function Home() {
 
                     {betCat === 'goals' && (
                       <div>
-                        <div style={{fontSize:'11px',color:'#a0a09a',marginBottom:'6px'}}>Total Goals in Match</div>
-                        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px'}}>
+                        <div style={{fontSize:'11px',color:'#a0a09a',marginBottom:'6px'}}>Full Time Total Goals</div>
+                        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'6px'}}>
                           {TOTAL_GOALS.map(opt => {
                             const tid = m.id+'_goals_'+opt.v; const active = !!s(tid);
                             return (
-                              <button key={opt.v} disabled={!!result||!namedIn} onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:opt.v,selectionLabel:opt.l,betType:'total_goals'})}
-                                style={{padding:'12px',borderRadius:'8px',border:'1px solid '+(active?'#f5c842':'rgba(255,255,255,0.1)'),background:active?'rgba(245,200,66,0.15)':'rgba(255,255,255,0.04)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,fontWeight:700,fontSize:'13px',color:active?'#f5c842':'#f0ede4'}}>
+                              <button key={opt.v} disabled={!!result||!namedIn} onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:opt.v,selectionLabel:'FT '+opt.l,betType:'total_goals'})}
+                                style={{padding:'10px 4px',borderRadius:'8px',border:'1px solid '+(active?'#f5c842':'rgba(255,255,255,0.1)'),background:active?'rgba(245,200,66,0.15)':'rgba(255,255,255,0.04)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,fontWeight:700,fontSize:'13px',color:active?'#f5c842':'#f0ede4',textAlign:'center'}}>
+                                {opt.l}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {betCat === 'htgoals' && (
+                      <div>
+                        <div style={{fontSize:'11px',color:'#a0a09a',marginBottom:'6px'}}>Half Time Total Goals</div>
+                        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'6px'}}>
+                          {HT_GOALS.map(opt => {
+                            const tid = m.id+'_htgoals_'+opt.v; const active = !!s(tid);
+                            return (
+                              <button key={opt.v} disabled={!!result||!namedIn} onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:opt.v,selectionLabel:'HT '+opt.l,betType:'ht_goals'})}
+                                style={{padding:'10px 4px',borderRadius:'8px',border:'1px solid '+(active?'#f5c842':'rgba(255,255,255,0.1)'),background:active?'rgba(245,200,66,0.15)':'rgba(255,255,255,0.04)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,fontWeight:700,fontSize:'13px',color:active?'#f5c842':'#f0ede4',textAlign:'center'}}>
                                 {opt.l}
                               </button>
                             );
