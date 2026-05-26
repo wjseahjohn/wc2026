@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   };
   const label = betTypeLabel[b.betType] || b.betType;
   const stakeText = b.stake > 0 ? 'SGD $'+b.stake : 'no stake entered';
-  const msg = '⚽ <b>New bet from '+playerName+'!</b>\n\nBet type: '+label+'\nSelection: '+b.selection+'\nStake: '+stakeText+'\n\n<a href="https://2026-wc-bets.vercel.app/facilitator">Confirm on facilitator</a>';
+  const msg = '⚽ <b>New bet from '+playerName+'!</b>\n\nBet type: '+label+'\nSelection: '+b.selection+'\nStake: '+stakeText+'\n\n<a href="https://wc2026bets.vercel.app/facilitator">Confirm on facilitator</a>';
 
   await sendTelegram(msg);
 
