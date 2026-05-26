@@ -430,16 +430,34 @@ export default function Home() {
                               <span style={{fontSize:'10px',padding:'2px 6px',borderRadius:'6px',background:'rgba(59,130,246,0.15)',color:'#60a5fa',fontWeight:600}}>{BET_LABELS[b.betType]||b.betType}</span>
                               <span style={{fontSize:'10px',padding:'2px 8px',borderRadius:'6px',background:pill.bg,color:pill.color,fontWeight:700}}>{pill.text}</span>
                             </div>
-                            <div style={{fontWeight:700,fontSize:'14px',marginBottom:'2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.selection}</div>
+                            <div style={{fontWeight:700,fontSize:'14px',marginBottom:'2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{(()=>{
+                              if (b.betType === '1x2') {
+                                const mid = b.targetId?.split('_')[0];
+                                const m = (data?.matches||[]).find((x:any)=>x.id===mid);
+                                if (m && b.selection === 'home') return m.homeTeam + ' Win';
+                                if (m && b.selection === 'away') return m.awayTeam + ' Win';
+                                if (b.selection === 'draw') return 'Draw';
+                              }
+                              return b.selection;
+                            })()}</div>
                             <div style={{fontSize:'12px',color:'#f0ede4',marginBottom:'2px'}}>{(()=>{const mid=b.targetId?.split('_')[0];const m=(data?.matches||[]).find((x:any)=>x.id===mid);return m?m.homeTeam+' vs '+m.awayTeam:'';})()}</div>
                             <div style={{fontSize:'11px',color:'#a0a09a'}}>{new Date(b.createdAt).toLocaleDateString('en-SG',{day:'numeric',month:'short'})}</div>
                           </div>
-                          <div style={{textAlign:'right',flexShrink:0}}>
+                          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'4px',flexShrink:0}}>
                             {b.odds > 1 && <div style={{fontSize:'12px',color:'#f5c842',marginBottom:'2px'}}>Odds: {b.odds.toFixed(2)}</div>}
                             {b.stake > 0 && <div style={{fontSize:'12px',color:'#a0a09a',marginBottom:'2px'}}>Staked: SGD ${b.stake}</div>}
-                            {b.stake > 0 && b.odds > 1 && !b.settled && <div style={{fontSize:'12px',color:'#a0a09a'}}>Potential: SGD ${(b.stake * b.odds).toFixed(2)}</div>}
-                            {b.settled && b.actualWin > 0 && <div style={{fontWeight:900,fontSize:'16px',color:'#4ade80'}}>+SGD ${b.actualWin.toFixed(2)}</div>}
-                            {b.settled && b.actualWin === 0 && b.stake > 0 && <div style={{fontWeight:700,fontSize:'14px',color:'#f87171'}}>-SGD ${b.stake.toFixed(2)}</div>}
+                            {b.stake > 0 && b.odds > 1 && !b.settled && <div style={{fontSize:'12px',color:'#a0a09a',marginBottom:'4px'}}>Potential: SGD ${(b.stake * b.odds).toFixed(2)}</div>}
+                            {b.settled && b.actualWin > 0 && <div style={{fontWeight:900,fontSize:'16px',color:'#4ade80',marginBottom:'4px'}}>+SGD ${b.actualWin.toFixed(2)}</div>}
+                            {b.settled && b.actualWin === 0 && b.stake > 0 && <div style={{fontWeight:700,fontSize:'14px',color:'#f87171',marginBottom:'4px'}}>-SGD ${b.stake.toFixed(2)}</div>}
+                            {!b.settled && !b.confirmedBySGPools && (
+                              <button onClick={async()=>{
+                                if(!confirm('Delete this bet?')) return;
+                                await fetch('/api/admin/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminKey:'__player__',deleteBetId:b.id,playerName:name})});
+                                load();
+                              }} style={{padding:'5px 10px',borderRadius:'6px',border:'1px solid rgba(248,113,113,0.35)',background:'rgba(248,113,113,0.1)',color:'#f87171',cursor:'pointer',fontSize:'11px',fontWeight:600}}>
+                                Delete
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
