@@ -136,11 +136,11 @@ export async function setMatchResult(matchId: string, result: MatchResult): Prom
   simpleResults[matchId] = homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'draw';
   await redis.set(RESULTS_KEY, simpleResults);
 
-  // Settle all bets for this match
+  // Settle all bets for this match (re-settle if updating)
   const all = await getAllBets();
   const updated = all.map(bet => {
     const betMatchId = bet.targetId.split('_')[0];
-    if (betMatchId !== matchId || bet.settled) return bet;
+    if (betMatchId !== matchId) return bet;
     const won = didBetWin(bet, result);
     return { ...bet, settled: true, actualWin: won ? Math.round(bet.stake * bet.odds * 100) / 100 : 0 };
   });
