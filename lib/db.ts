@@ -114,6 +114,11 @@ function didBetWin(bet: Bet, result: MatchResult): boolean {
     return htTotal === num;
   }
 
+  // HT 1X2
+  if (bt === 'htx2_home') return htHomeScore > htAwayScore;
+  if (bt === 'htx2_draw') return htHomeScore === htAwayScore;
+  if (bt === 'htx2_away') return htAwayScore > htHomeScore;
+
   // HT/FT
   if (bt === 'htft') {
     const htResult = htHomeScore > htAwayScore ? '1' : htHomeScore < htAwayScore ? '2' : 'X';
