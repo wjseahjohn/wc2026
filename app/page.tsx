@@ -61,6 +61,39 @@ function statusPill(b: any) {
   return { text: 'Pending', bg: 'rgba(232,144,26,0.2)', color: '#e8901a' };
 }
 
+function formatSelection(b: any, matches: any[]): string {
+  const sel = b.selection;
+  const bt = b.betType;
+  const mid = b.targetId?.split('_')[0];
+  const m = matches.find((x:any) => x.id === mid);
+
+  if (bt === '1x2') {
+    if (m && sel === 'home') return m.homeTeam + ' Win';
+    if (m && sel === 'away') return m.awayTeam + ' Win';
+    if (sel === 'draw') return 'Draw';
+  }
+  if (bt === 'correct_score') return 'Score ' + sel;
+  if (bt === 'ou_over' || sel === 'ou-over') return 'Over 2.5';
+  if (bt === 'ou_under' || sel === 'ou-under') return 'Under 2.5';
+  if (bt === 'btts_yes' || sel === 'btts-yes') return 'BTTS: Yes';
+  if (bt === 'btts_no' || sel === 'btts-no') return 'BTTS: No';
+  if (bt === 'total_goals') return 'FT Total: ' + (sel==='8+'?'8+':sel) + ' Goals';
+  if (bt === 'ht_goals') {
+    if (sel === 'ht5+') return 'HT Total: 5+ Goals';
+    return 'HT Total: ' + sel.replace('ht','') + ' Goals';
+  }
+  if (bt === 'htx2_home') return m ? 'HT: ' + m.homeTeam + ' Win' : 'HT Home Win';
+  if (bt === 'htx2_away') return m ? 'HT: ' + m.awayTeam + ' Win' : 'HT Away Win';
+  if (bt === 'htx2_draw') return 'HT: Draw';
+  if (bt === 'htft') {
+    const parts = sel.split('/');
+    const htL = parts[0]==='1'?(m?.homeTeam||'Home'):parts[0]==='2'?(m?.awayTeam||'Away'):'Draw';
+    const ftL = parts[1]==='1'?(m?.homeTeam||'Home'):parts[1]==='2'?(m?.awayTeam||'Away'):'Draw';
+    return 'HT/FT: ' + htL + ' / ' + ftL;
+  }
+  return sel;
+}
+
 export default function Home() {
   const [tab, setTab] = useState<Tab>('matches');
   const [name, setName] = useState('');
@@ -590,14 +623,22 @@ export default function Home() {
                               <div style={{width:'28px',height:'28px',borderRadius:'50%',background:'rgba(245,200,66,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'12px',color:'#f5c842',flexShrink:0}}>
                                 {b.playerName?.[0]?.toUpperCase()}
                               </div>
-                              <div style={{minWidth:0}}>
+                              <div style={{minWidth:0,flex:1}}>
                                 <div style={{fontWeight:700,fontSize:'13px',color:'#f5c842'}}>{b.playerName}</div>
-                                <div style={{fontSize:'12px',color:'#f0ede4',fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.selection}</div>
+                                <div style={{fontSize:'12px',color:'#f0ede4',fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{formatSelection(b, data?.matches||[])}</div>
+                                <div style={{fontSize:'10px',color:'#a0a09a'}}>{BET_LABELS[b.betType]||b.betType}{b.odds > 1 ? ' · Odds '+b.odds.toFixed(2) : ''}</div>
                               </div>
                             </div>
-                            <div style={{display:'flex',alignItems:'center',gap:'5px',flexShrink:0}}>
-                              {b.stake > 0 && <span style={{fontSize:'11px',color:'#4ade80',fontWeight:700}}>${b.stake}</span>}
-                              <span style={{fontSize:'10px',padding:'2px 6px',borderRadius:'6px',background:pill.bg,color:pill.color,fontWeight:700}}>{pill.text}</span>
+                            <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'3px',flexShrink:0}}>
+                              <div style={{display:'flex',alignItems:'center',gap:'5px'}}>
+                                {b.stake > 0 && <span style={{fontSize:'11px',color:'#4ade80',fontWeight:700}}>${b.stake}</span>}
+                                <span style={{fontSize:'10px',padding:'2px 6px',borderRadius:'6px',background:pill.bg,color:pill.color,fontWeight:700}}>{pill.text}</span>
+                              </div>
+                              {b.stake > 0 && b.odds > 1 && (
+                                <div style={{fontSize:'10px',color:'#a0a09a'}}>
+                                  {b.settled ? (b.actualWin>0?'+$'+b.actualWin.toFixed(2):'-$'+b.stake.toFixed(2)) : 'Pot: $'+(b.stake*b.odds).toFixed(2)}
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
