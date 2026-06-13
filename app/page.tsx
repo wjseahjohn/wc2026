@@ -446,7 +446,7 @@ export default function Home() {
 
         {/* SGPools odds link */}
         {tab === 'matches' && namedIn && (
-          <a href="https://www.singaporepools.com.sg/en/Pages/SP%20Sports/football.aspx" target="_blank" rel="noopener noreferrer"
+          <a href="https://online.singaporepools.com/en/sports/competition/171/football/world/w-cup" target="_blank" rel="noopener noreferrer"
             style={{display:'block',textAlign:'center',padding:'12px',borderRadius:'12px',marginBottom:'14px',background:'rgba(245,200,66,0.1)',border:'1px solid rgba(245,200,66,0.3)',color:'#f5c842',fontWeight:700,fontSize:'14px',textDecoration:'none'}}>
             Click here to see odds! 🔗
           </a>
