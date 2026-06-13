@@ -93,6 +93,12 @@ function didBetWin(bet: Bet, result: MatchResult): boolean {
     return parseInt(parts[0]) === homeScore && parseInt(parts[1]) === awayScore;
   }
 
+  // Half Time Correct Score
+  if (bt === 'ht_correct_score') {
+    const parts = sel.split('-');
+    return parseInt(parts[0]) === htHomeScore && parseInt(parts[1]) === htAwayScore;
+  }
+
   // Over/Under 2.5
   if (bt === 'ou_over' || sel === 'ou-over') return (homeScore + awayScore) > 2.5;
   if (bt === 'ou_under' || sel === 'ou-under') return (homeScore + awayScore) < 2.5;
