@@ -16,6 +16,7 @@ export default function FacilitatorPage() {
   const [matches, setMatches] = useState<any[]>([]);
   const [matchResults, setMatchResults] = useState<Record<string,any>>({});
   const [odds, setOdds] = useState<Record<string,string>>({});
+  const [handicapLines, setHandicapLines] = useState<Record<string,string>>({});
   const [scoreInput, setScoreInput] = useState<Record<string,any>>({});
   const [saving, setSaving] = useState('');
   const [savingResult, setSavingResult] = useState('');
@@ -29,6 +30,8 @@ export default function FacilitatorPage() {
       loadAll();
       const savedOdds = localStorage.getItem('facilitator_odds');
       if (savedOdds) setOdds(JSON.parse(savedOdds));
+      const savedLines = localStorage.getItem('facilitator_handicap_lines');
+      if (savedLines) setHandicapLines(JSON.parse(savedLines));
     }
   }, [authed]);
 
@@ -47,6 +50,12 @@ export default function FacilitatorPage() {
     const updated = {...odds, [betId]: val};
     setOdds(updated);
     localStorage.setItem('facilitator_odds', JSON.stringify(updated));
+  }
+
+  function updateHandicapLine(betId: string, val: string) {
+    const updated = {...handicapLines, [betId]: val};
+    setHandicapLines(updated);
+    localStorage.setItem('facilitator_handicap_lines', JSON.stringify(updated));
   }
 
   async function resetResult(matchId: string, matchLabel: string) {
@@ -71,10 +80,11 @@ export default function FacilitatorPage() {
   async function confirmBet(betId: string) {
     setSaving(betId);
     const oddsVal = parseFloat(odds[betId] || '0');
+    const hcapLine = handicapLines[betId] || '';
     await fetch('/api/bets', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ action: 'confirm', betIds: [betId], oddsMap: {[betId]: oddsVal} }),
+      body: JSON.stringify({ action: 'confirm', betIds: [betId], oddsMap: {[betId]: oddsVal}, handicapLineMap: hcapLine ? {[betId]: hcapLine} : {} }),
     });
     setSaving('');
     setMsg('Bet confirmed!');
@@ -441,6 +451,16 @@ export default function FacilitatorPage() {
                           </div>
 
                           <div style={{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}}>
+                            {(b.betType==='handicap_home'||b.betType==='handicap_away') && (
+                              <div style={{display:'flex',alignItems:'center',gap:'6px',background:'rgba(255,255,255,0.05)',borderRadius:'8px',padding:'6px 10px',flexShrink:0}}>
+                                <span style={{fontSize:'11px',color:'#a0a09a'}}>Line:</span>
+                                <input type="text"
+                                  value={handicapLines[b.id] || b.handicapLine || ''}
+                                  onChange={e=>updateHandicapLine(b.id, e.target.value)}
+                                  placeholder="e.g. -1.5"
+                                  style={{width:'60px',padding:'4px 8px',borderRadius:'6px',border:'1px solid rgba(245,200,66,0.3)',background:'rgba(7,31,16,0.8)',color:'#f5c842',fontWeight:700,fontSize:'14px',outline:'none',fontFamily:'inherit',textAlign:'center'}} />
+                              </div>
+                            )}
                             <div style={{display:'flex',alignItems:'center',gap:'6px',background:'rgba(255,255,255,0.05)',borderRadius:'8px',padding:'6px 10px',flex:1,minWidth:'160px'}}>
                               <span style={{fontSize:'11px',color:'#a0a09a',flexShrink:0}}>SGPools Odds:</span>
                               <input type="number" step="0.01" min="1"
