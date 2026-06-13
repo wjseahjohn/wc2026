@@ -8,7 +8,6 @@ const BET_LABELS: Record<string,string> = {
   'correct_score':'Score','winner':'Winner','scorer':'Scorer',
 };
 
-const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 
 export default function FacilitatorPage() {
   const [key, setKey] = useState('');
@@ -281,14 +280,19 @@ export default function FacilitatorPage() {
               <div style={{fontSize:'12px',color:'#a0a09a',marginTop:'2px'}}>Enter the final score to automatically settle ALL bet types for that match</div>
             </div>
 
-            {GROUPS.map(grp => {
-              const grpMatches = matches.filter((m:any) => m.group === grp);
-              if (grpMatches.length === 0) return null;
-              return (
-                <div key={grp} style={{marginBottom:'20px'}}>
-                  <div style={{fontSize:'12px',fontWeight:700,color:'#a0a09a',marginBottom:'8px',letterSpacing:'2px'}}>GROUP {grp}</div>
+            {(()=>{
+              const byDate: Record<string, any[]> = {};
+              [...matches].sort((a:any,b:any) => (a.date+a.time) < (b.date+b.time) ? -1 : 1).forEach((m:any) => {
+                if (!byDate[m.date]) byDate[m.date] = [];
+                byDate[m.date].push(m);
+              });
+              return Object.entries(byDate).map(([date, dayMatches]) => (
+                <div key={date} style={{marginBottom:'20px'}}>
+                  <div style={{fontSize:'13px',fontWeight:700,color:'#f5c842',marginBottom:'8px',padding:'6px 10px',background:'rgba(245,200,66,0.08)',borderRadius:'8px',letterSpacing:'1px'}}>
+                    {new Date(date+'T12:00:00').toLocaleDateString('en-SG',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
+                  </div>
                   <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-                    {grpMatches.map((m:any) => {
+                    {(dayMatches as any[]).map((m:any) => {
                       const settled = matchResults[m.id];
                       const si = scoreInput[m.id] || {};
                       return (
@@ -364,8 +368,8 @@ export default function FacilitatorPage() {
                     })}
                   </div>
                 </div>
-              );
-            })}
+              ));
+            })()}
           </div>
         )}
 
