@@ -18,6 +18,7 @@ export interface Bet {
   settled: boolean;
   confirmedBySGPools: boolean;
   createdAt: string;
+  handicapLine?: string;
 }
 
 export interface MatchResult {
@@ -46,7 +47,7 @@ export async function addBet(b: Omit<Bet,'id'|'createdAt'|'settled'|'actualWin'|
   return bet;
 }
 
-export async function confirmBets(betIds: string[], oddsMap: Record<string,number> = {}): Promise<void> {
+export async function confirmBets(betIds: string[], oddsMap: Record<string,number> = {}, handicapLineMap: Record<string,string> = {}): Promise<void> {
   const all = await getAllBets();
   await redis.set(BETS_KEY, all.map(b => {
     if (!betIds.includes(b.id)) return b;
@@ -54,7 +55,8 @@ export async function confirmBets(betIds: string[], oddsMap: Record<string,numbe
     const newPotential = b.stake > 0 && newOdds > 0 ? Math.round(b.stake * newOdds * 100) / 100 : b.potentialWin;
     // If bet already won, recalculate actualWin with new odds
     const newActualWin = b.settled && b.actualWin > 0 ? newPotential : b.actualWin;
-    return { ...b, confirmedBySGPools: true, odds: newOdds, potentialWin: newPotential, actualWin: newActualWin };
+    const newHandicapLine = handicapLineMap[b.id] !== undefined ? handicapLineMap[b.id] : b.handicapLine;
+    return { ...b, confirmedBySGPools: true, odds: newOdds, potentialWin: newPotential, actualWin: newActualWin, handicapLine: newHandicapLine };
   }));
 }
 
@@ -118,6 +120,17 @@ function didBetWin(bet: Bet, result: MatchResult): boolean {
   if (bt === 'htx2_home') return htHomeScore > htAwayScore;
   if (bt === 'htx2_draw') return htHomeScore === htAwayScore;
   if (bt === 'htx2_away') return htAwayScore > htHomeScore;
+
+  // Goal Handicap
+  // Line is from the perspective of the team that was bet on.
+  // e.g. handicap_home with line "-1.5" means home needs to win by 2+
+  // handicap_home with line "+1.5" means home can lose by 1 and still win the bet
+  if (bt === 'handicap_home' || bt === 'handicap_away') {
+    const line = parseFloat(bet.handicapLine || '0');
+    if (isNaN(line)) return false;
+    const diff = bt === 'handicap_home' ? (homeScore - awayScore) : (awayScore - homeScore);
+    return (diff + line) > 0;
+  }
 
   // HT/FT
   if (bt === 'htft') {
