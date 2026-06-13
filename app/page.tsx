@@ -429,7 +429,7 @@ export default function Home() {
 
       {/* Header */}
       <div style={{position:'sticky',top:0,zIndex:40,background:'rgba(7,31,16,0.97)',borderBottom:'1px solid rgba(245,200,66,0.2)',backdropFilter:'blur(12px)',padding:'12px 16px'}}>
-        <div style={{maxWidth:'600px',margin:'0 auto'}}>
+        <div style={{maxWidth:'720px',margin:'0 auto'}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
             <div>
               <div style={{fontSize:'20px',fontWeight:900,color:'#f5c842',letterSpacing:'2px'}}>WC2026 BETS</div>
@@ -453,7 +453,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div style={{maxWidth:'600px',margin:'0 auto',padding:'16px'}}>
+      <div style={{maxWidth:'720px',margin:'0 auto',padding:'16px'}}>
 
         {/* Name Gate */}
         {!namedIn && (
@@ -524,7 +524,7 @@ export default function Home() {
 
             {/* Sticky bet category bar */}
             <div style={{position:'sticky',top:namedIn?'130px':'118px',zIndex:30,background:'rgba(7,31,16,0.97)',padding:'8px 0 10px 0',marginBottom:'8px',backdropFilter:'blur(8px)',borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
-              <div style={{display:'flex',gap:'4px',overflowX:'auto',paddingBottom:'2px',scrollbarWidth:'none'}}>
+              <div style={{display:'flex',gap:'4px',flexWrap:'wrap'}}>
                 {BET_CATS.map(c => (
                   <button key={c.id} onClick={()=>setBetCat(c.id)} style={{padding:'6px 14px',borderRadius:'20px',border:'1px solid '+(betCat===c.id?'#f5c842':'rgba(255,255,255,0.15)'),cursor:'pointer',fontWeight:700,flexShrink:0,fontSize:'12px',background:betCat===c.id?'rgba(245,200,66,0.15)':'transparent',color:betCat===c.id?'#f5c842':'#a0a09a'}}>
                     {c.label}
@@ -814,7 +814,7 @@ export default function Home() {
 
       {/* Bet Slip */}
       {slip.length > 0 && (
-        <div style={{position:'fixed',bottom:'16px',left:0,right:0,zIndex:50,maxWidth:'600px',margin:'0 auto',padding:'0 16px'}}>
+        <div style={{position:'fixed',bottom:'16px',left:0,right:0,zIndex:50,maxWidth:'720px',margin:'0 auto',padding:'0 16px'}}>
           <div style={{background:'linear-gradient(135deg,#1a2f1e,#0d1f10)',border:'1px solid rgba(245,200,66,0.35)',borderRadius:'16px',overflow:'hidden',boxShadow:'0 8px 32px rgba(0,0,0,0.6)'}}>
             <button onClick={()=>setSlipOpen(!slipOpen)} style={{width:'100%',padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:'rgba(245,200,66,0.08)',border:'none',cursor:'pointer',color:'#f0ede4'}}>
               <span style={{fontWeight:900,color:'#f5c842',letterSpacing:'1px',fontSize:'14px'}}>BET SLIP ({slip.length})</span>
