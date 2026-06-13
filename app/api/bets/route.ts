@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   const b = await req.json();
 
   if (b.action === 'confirm' && b.betIds) {
-    await confirmBets(b.betIds, b.oddsMap || {});
+    await confirmBets(b.betIds, b.oddsMap || {}, b.handicapLineMap || {});
     return NextResponse.json({ ok: true });
   }
 
