@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { GROUPS } from '@/lib/data';
 
 type Tab = 'matches' | 'mybets' | 'allbets' | 'board';
-type BetCategory = '1x2' | 'ou' | 'btts' | 'htft' | 'score' | 'goals' | 'htgoals' | 'htx2';
+type BetCategory = '1x2' | 'ou' | 'btts' | 'htft' | 'score' | 'goals' | 'htgoals' | 'htx2' | 'handicap';
 
 interface SlipItem {
   targetId: string; label: string; selection: string;
@@ -44,12 +44,14 @@ const BET_LABELS: Record<string,string> = {
   'score':'Score','goals':'FT Goals','htgoals':'HT Goals',
   'ou_over':'O/U','ou_under':'O/U','btts_yes':'BTTS','btts_no':'BTTS',
   'total_goals':'FT Goals','ht_goals':'HT Goals','correct_score':'Score','htx2':'HT 1X2',
+  'handicap_home':'Handicap','handicap_away':'Handicap',
 };
 
 const BET_CATS: {id: BetCategory; label: string}[] = [
   {id:'1x2',label:'1X2'},{id:'ou',label:'O/U'},{id:'btts',label:'BTTS'},
   {id:'htft',label:'HT/FT'},{id:'score',label:'Score'},
   {id:'goals',label:'FT Goals'},{id:'htgoals',label:'HT Goals'},{id:'htx2',label:'HT 1X2'},
+  {id:'handicap',label:'Handicap'},
 ];
 
 function statusPill(b: any) {
@@ -91,6 +93,8 @@ function formatSelection(b: any, matches: any[]): string {
     const ftL = parts[1]==='1'?(m?.homeTeam||'Home'):parts[1]==='2'?(m?.awayTeam||'Away'):'Draw';
     return 'HT/FT: ' + htL + ' / ' + ftL;
   }
+  if (bt === 'handicap_home') return (m?.homeTeam||'Home') + ' (Handicap' + (b.handicapLine ? ' '+b.handicapLine : '') + ')';
+  if (bt === 'handicap_away') return (m?.awayTeam||'Away') + ' (Handicap' + (b.handicapLine ? ' '+b.handicapLine : '') + ')';
   return sel;
 }
 
@@ -353,6 +357,27 @@ export default function Home() {
                   </button>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {betCat === 'handicap' && (
+          <div>
+            <div style={{fontSize:'11px',color:'#a0a09a',marginBottom:'6px'}}>Goal Handicap (SGPools line - check odds page for current line)</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px'}}>
+              {[['hcap-home',m.homeTeam,'handicap_home'],['hcap-away',m.awayTeam,'handicap_away']].map(([sel,label,bt]) => {
+                const tid = m.id+'_'+sel; const active = !!s(tid);
+                return (
+                  <button key={sel} disabled={!!result||!namedIn}
+                    onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:sel,selectionLabel:String(label)+' (Handicap)',betType:bt})}
+                    style={{padding:'12px 4px',borderRadius:'8px',border:'1px solid '+(active?'#f5c842':'rgba(255,255,255,0.1)'),background:active?'rgba(245,200,66,0.15)':'rgba(255,255,255,0.04)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result&&!active?0.5:1,fontWeight:700,fontSize:'13px',color:active?'#f5c842':'#f0ede4',textAlign:'center'}}>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{fontSize:'10px',color:'#a0a09a',marginTop:'6px'}}>
+              The facilitator will confirm the exact handicap line (e.g. +1.5 / -1.5) and odds when placing on SGPools.
             </div>
           </div>
         )}
