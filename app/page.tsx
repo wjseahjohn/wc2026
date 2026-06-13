@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { GROUPS } from '@/lib/data';
 
 type Tab = 'matches' | 'mybets' | 'allbets' | 'board';
-type BetCategory = '1x2' | 'ou' | 'btts' | 'htft' | 'score' | 'goals' | 'htgoals' | 'htx2' | 'handicap';
+type BetCategory = '1x2' | 'ou' | 'btts' | 'htft' | 'score' | 'htscore' | 'goals' | 'htgoals' | 'htx2' | 'handicap';
 
 interface SlipItem {
   targetId: string; label: string; selection: string;
@@ -28,6 +28,12 @@ const CORRECT_SCORES = [
   '3-4',
 ];
 
+const HT_SCORES = [
+  '0-0','1-0','0-1','1-1','2-0','0-2',
+  '2-1','1-2','2-2','3-0','0-3','3-1',
+  '1-3','3-2','2-3','3-3',
+];
+
 const TOTAL_GOALS = [
   {v:'0',l:'0 Goals'},{v:'1',l:'1 Goal'},{v:'2',l:'2 Goals'},
   {v:'3',l:'3 Goals'},{v:'4',l:'4 Goals'},{v:'5',l:'5 Goals'},
@@ -44,12 +50,12 @@ const BET_LABELS: Record<string,string> = {
   'score':'Score','goals':'FT Goals','htgoals':'HT Goals',
   'ou_over':'O/U','ou_under':'O/U','btts_yes':'BTTS','btts_no':'BTTS',
   'total_goals':'FT Goals','ht_goals':'HT Goals','correct_score':'Score','htx2':'HT 1X2',
-  'handicap_home':'Handicap','handicap_away':'Handicap',
+  'handicap_home':'Handicap','handicap_away':'Handicap','ht_correct_score':'HT Score','htscore':'HT Score',
 };
 
 const BET_CATS: {id: BetCategory; label: string}[] = [
   {id:'1x2',label:'1X2'},{id:'ou',label:'O/U'},{id:'btts',label:'BTTS'},
-  {id:'htft',label:'HT/FT'},{id:'score',label:'Score'},
+  {id:'htft',label:'HT/FT'},{id:'score',label:'Score'},{id:'htscore',label:'HT Score'},
   {id:'goals',label:'FT Goals'},{id:'htgoals',label:'HT Goals'},{id:'htx2',label:'HT 1X2'},
   {id:'handicap',label:'Handicap'},
 ];
@@ -75,6 +81,7 @@ function formatSelection(b: any, matches: any[]): string {
     if (sel === 'draw') return 'Draw';
   }
   if (bt === 'correct_score') return 'Score ' + sel;
+  if (bt === 'ht_correct_score') return 'HT Score ' + sel;
   if (bt === 'ou_over' || sel === 'ou-over') return 'Over 2.5';
   if (bt === 'ou_under' || sel === 'ou-under') return 'Under 2.5';
   if (bt === 'btts_yes' || sel === 'btts-yes') return 'BTTS: Yes';
@@ -300,6 +307,31 @@ export default function Home() {
                 return (
                   <button key={score} disabled={!!result||!namedIn}
                     onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:score,selectionLabel:m.homeTeam+' '+h+'-'+a+' '+m.awayTeam,betType:'correct_score'})}
+                    style={{padding:'8px 2px',borderRadius:'8px',border:'1px solid '+(active?'#f5c842':isDraw?'rgba(245,200,66,0.25)':homeWin?'rgba(74,222,128,0.25)':'rgba(248,113,113,0.25)'),background:active?'rgba(245,200,66,0.2)':isDraw?'rgba(245,200,66,0.06)':homeWin?'rgba(74,222,128,0.06)':'rgba(248,113,113,0.06)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,textAlign:'center'}}>
+                    <div style={{fontWeight:900,fontSize:'14px',color:active?'#f5c842':isDraw?'#f5c842':homeWin?'#4ade80':'#f87171'}}>{score}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {betCat === 'htscore' && (
+          <div>
+            <div style={{display:'flex',gap:'8px',marginBottom:'6px',padding:'8px',borderRadius:'8px',background:'rgba(255,255,255,0.05)'}}>
+              <div style={{flex:1,textAlign:'center',fontSize:'12px',fontWeight:700,color:'#4ade80'}}>{m.homeFlag} {m.homeTeam}</div>
+              <div style={{fontSize:'12px',color:'#a0a09a'}}>vs</div>
+              <div style={{flex:1,textAlign:'center',fontSize:'12px',fontWeight:700,color:'#f87171'}}>{m.awayFlag} {m.awayTeam}</div>
+            </div>
+            <div style={{fontSize:'10px',color:'#a0a09a',marginBottom:'6px'}}>Half Time Score · Green = {m.homeTeam} ahead · Yellow = Level · Red = {m.awayTeam} ahead</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'5px'}}>
+              {HT_SCORES.map(score => {
+                const tid = m.id+'_htscore_'+score; const active = !!s(tid);
+                const parts = score.split('-'); const h = parseInt(parts[0]); const a = parseInt(parts[1]);
+                const isDraw = h===a; const homeWin = h>a;
+                return (
+                  <button key={score} disabled={!!result||!namedIn}
+                    onClick={()=>addSlip({targetId:tid,label:m.homeTeam+' vs '+m.awayTeam,selection:score,selectionLabel:'HT '+m.homeTeam+' '+h+'-'+a+' '+m.awayTeam,betType:'ht_correct_score'})}
                     style={{padding:'8px 2px',borderRadius:'8px',border:'1px solid '+(active?'#f5c842':isDraw?'rgba(245,200,66,0.25)':homeWin?'rgba(74,222,128,0.25)':'rgba(248,113,113,0.25)'),background:active?'rgba(245,200,66,0.2)':isDraw?'rgba(245,200,66,0.06)':homeWin?'rgba(74,222,128,0.06)':'rgba(248,113,113,0.06)',cursor:result||!namedIn?'not-allowed':'pointer',opacity:result?0.5:1,textAlign:'center'}}>
                     <div style={{fontWeight:900,fontSize:'14px',color:active?'#f5c842':isDraw?'#f5c842':homeWin?'#4ade80':'#f87171'}}>{score}</div>
                   </button>
