@@ -22,6 +22,7 @@ export default function FacilitatorPage() {
   const [savingResult, setSavingResult] = useState('');
   const [msg, setMsg] = useState('');
   const [view, setView] = useState<'bets'|'results'>('bets');
+  const [resultsFilter, setResultsFilter] = useState<'upcoming'|'completed'>('upcoming');
   const [filter, setFilter] = useState<'all'|'unconfirmed'|'confirmed'>('unconfirmed');
   const [playerFilter, setPlayerFilter] = useState('');
 
@@ -290,15 +291,41 @@ export default function FacilitatorPage() {
               <div style={{fontSize:'12px',color:'#a0a09a',marginTop:'2px'}}>Enter the final score to automatically settle ALL bet types for that match</div>
             </div>
 
+            {/* Upcoming / Completed toggle */}
+            <div style={{display:'flex',gap:'6px',marginBottom:'14px'}}>
+              {(()=>{
+                const upcomingCount = matches.filter((m:any)=>!matchResults[m.id]).length;
+                const completedCount = matches.filter((m:any)=>matchResults[m.id]).length;
+                return [['upcoming','Upcoming ('+upcomingCount+')'],['completed','Completed ('+completedCount+')']].map(([v,l]) => (
+                  <button key={v} onClick={()=>setResultsFilter(v as 'upcoming'|'completed')}
+                    style={{padding:'7px 16px',borderRadius:'20px',border:'none',cursor:'pointer',fontWeight:700,fontSize:'13px',background:resultsFilter===v?'#f5c842':'rgba(255,255,255,0.06)',color:resultsFilter===v?'#071f10':'#a0a09a'}}>
+                    {l}
+                  </button>
+                ));
+              })()}
+            </div>
+
             {(()=>{
+              const filteredMatches = matches.filter((m:any) => resultsFilter==='upcoming' ? !matchResults[m.id] : !!matchResults[m.id]);
               const byDate: Record<string, any[]> = {};
-              [...matches].sort((a:any,b:any) => (a.date+a.time) < (b.date+b.time) ? -1 : 1).forEach((m:any) => {
+              const sorted = [...filteredMatches].sort((a:any,b:any) => {
+                const cmp = (a.date+a.time) < (b.date+b.time) ? -1 : 1;
+                return resultsFilter==='completed' ? -cmp : cmp;
+              });
+              sorted.forEach((m:any) => {
                 if (!byDate[m.date]) byDate[m.date] = [];
                 byDate[m.date].push(m);
               });
+              if (sorted.length === 0) {
+                return (
+                  <div style={{padding:'40px',textAlign:'center',color:'#a0a09a',background:'rgba(255,255,255,0.04)',borderRadius:'12px'}}>
+                    {resultsFilter==='upcoming' ? 'All matches completed!' : 'No matches completed yet.'}
+                  </div>
+                );
+              }
               return Object.entries(byDate).map(([date, dayMatches]) => (
                 <div key={date} style={{marginBottom:'20px'}}>
-                  <div style={{fontSize:'13px',fontWeight:700,color:'#f5c842',marginBottom:'8px',padding:'6px 10px',background:'rgba(245,200,66,0.08)',borderRadius:'8px',letterSpacing:'1px'}}>
+                  <div style={{fontSize:'13px',fontWeight:700,color:resultsFilter==='upcoming'?'#f5c842':'#a0a09a',marginBottom:'8px',padding:'6px 10px',background:resultsFilter==='upcoming'?'rgba(245,200,66,0.08)':'rgba(255,255,255,0.04)',borderRadius:'8px',letterSpacing:'1px'}}>
                     {new Date(date+'T12:00:00').toLocaleDateString('en-SG',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
                   </div>
                   <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
