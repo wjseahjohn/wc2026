@@ -109,6 +109,7 @@ export default function Home() {
   const [group, setGroup] = useState('A');
   const [betCat, setBetCat] = useState<BetCategory>('1x2');
   const [matchView, setMatchView] = useState<'date'|'group'>('date');
+  const [matchStatus, setMatchStatus] = useState<'upcoming'|'completed'>('upcoming');
   const [allBetsFilter, setAllBetsFilter] = useState('');
 
   const load = useCallback(async () => {
@@ -178,14 +179,23 @@ export default function Home() {
   bets.forEach((b:any) => { if (b.playerName && !uniquePlayers.includes(b.playerName)) uniquePlayers.push(b.playerName); });
 
   // Sorted matches by date for date view
-  const matchesByDate: Record<string, any[]> = {};
-  [...(data?.matches||[])].sort((a:any,b:any) => {
+  const allSorted = [...(data?.matches||[])].sort((a:any,b:any) => {
     const da = a.date+a.time; const db = b.date+b.time;
     return da < db ? -1 : 1;
-  }).forEach((m:any) => {
-    if (!matchesByDate[m.date]) matchesByDate[m.date] = [];
-    matchesByDate[m.date].push(m);
   });
+  const upcomingMatches = allSorted.filter((m:any) => !data?.results?.[m.id]);
+  const completedMatches = [...allSorted.filter((m:any) => data?.results?.[m.id])].reverse();
+
+  function groupByDate(list: any[]) {
+    const byDate: Record<string, any[]> = {};
+    list.forEach((m:any) => {
+      if (!byDate[m.date]) byDate[m.date] = [];
+      byDate[m.date].push(m);
+    });
+    return byDate;
+  }
+  const matchesByDate = groupByDate(upcomingMatches);
+  const completedByDate = groupByDate(completedMatches);
 
   function MatchCard({ m }: { m: any }) {
     const result = data?.results?.[m.id];
@@ -416,6 +426,16 @@ export default function Home() {
               <div style={{fontSize:'22px',fontWeight:900,color:'#f5c842',letterSpacing:'2px'}}>GROUP STAGE</div>
             </div>
 
+            {/* Upcoming / Completed toggle */}
+            <div style={{display:'flex',gap:'6px',marginBottom:'10px'}}>
+              {[['upcoming','Upcoming ('+upcomingMatches.length+')'],['completed','Completed ('+completedMatches.length+')']].map(([v,l]) => (
+                <button key={v} onClick={()=>setMatchStatus(v as 'upcoming'|'completed')}
+                  style={{padding:'7px 16px',borderRadius:'20px',border:'none',cursor:'pointer',fontWeight:700,fontSize:'13px',background:matchStatus===v?'#f5c842':'rgba(255,255,255,0.06)',color:matchStatus===v?'#071f10':'#a0a09a'}}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
             {/* View toggle */}
             <div style={{display:'flex',gap:'6px',marginBottom:'10px'}}>
               {[['date','By Date'],['group','By Group']].map(([v,l]) => (
@@ -448,26 +468,65 @@ export default function Home() {
               </div>
             </div>
 
-            {/* BY DATE */}
-            {matchView === 'date' && (
-              <div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
-                {Object.entries(matchesByDate).map(([date, dayMatches]) => (
-                  <div key={date}>
-                    <div style={{fontSize:'13px',fontWeight:700,color:'#f5c842',marginBottom:'8px',padding:'6px 10px',background:'rgba(245,200,66,0.08)',borderRadius:'8px',letterSpacing:'1px'}}>
-                      {new Date(date+'T12:00:00').toLocaleDateString('en-SG',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
+            {/* UPCOMING - BY DATE */}
+            {matchStatus === 'upcoming' && matchView === 'date' && (
+              upcomingMatches.length === 0 ? (
+                <div style={{padding:'40px',textAlign:'center',color:'#a0a09a',background:'rgba(255,255,255,0.04)',borderRadius:'12px'}}>All matches completed!</div>
+              ) : (
+                <div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
+                  {Object.entries(matchesByDate).map(([date, dayMatches]) => (
+                    <div key={date}>
+                      <div style={{fontSize:'13px',fontWeight:700,color:'#f5c842',marginBottom:'8px',padding:'6px 10px',background:'rgba(245,200,66,0.08)',borderRadius:'8px',letterSpacing:'1px'}}>
+                        {new Date(date+'T12:00:00').toLocaleDateString('en-SG',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
+                      </div>
+                      <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                        {(dayMatches as any[]).map((m:any) => <MatchCard key={m.id} m={m} />)}
+                      </div>
                     </div>
-                    <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
-                      {(dayMatches as any[]).map((m:any) => <MatchCard key={m.id} m={m} />)}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )
+            )}
+
+            {/* UPCOMING - BY GROUP */}
+            {matchStatus === 'upcoming' && matchView === 'group' && (
+              <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                {groupMatches(group).filter((m:any)=>!data?.results?.[m.id]).length === 0 ? (
+                  <div style={{padding:'40px',textAlign:'center',color:'#a0a09a',background:'rgba(255,255,255,0.04)',borderRadius:'12px'}}>All matches in this group completed!</div>
+                ) : (
+                  groupMatches(group).filter((m:any)=>!data?.results?.[m.id]).map((m:any) => <MatchCard key={m.id} m={m} />)
+                )}
               </div>
             )}
 
-            {/* BY GROUP */}
-            {matchView === 'group' && (
+            {/* COMPLETED - BY DATE */}
+            {matchStatus === 'completed' && matchView === 'date' && (
+              completedMatches.length === 0 ? (
+                <div style={{padding:'40px',textAlign:'center',color:'#a0a09a',background:'rgba(255,255,255,0.04)',borderRadius:'12px'}}>No matches completed yet.</div>
+              ) : (
+                <div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
+                  {Object.entries(completedByDate).map(([date, dayMatches]) => (
+                    <div key={date}>
+                      <div style={{fontSize:'13px',fontWeight:700,color:'#a0a09a',marginBottom:'8px',padding:'6px 10px',background:'rgba(255,255,255,0.04)',borderRadius:'8px',letterSpacing:'1px'}}>
+                        {new Date(date+'T12:00:00').toLocaleDateString('en-SG',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
+                      </div>
+                      <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                        {(dayMatches as any[]).map((m:any) => <MatchCard key={m.id} m={m} />)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
+
+            {/* COMPLETED - BY GROUP */}
+            {matchStatus === 'completed' && matchView === 'group' && (
               <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
-                {groupMatches(group).map((m:any) => <MatchCard key={m.id} m={m} />)}
+                {groupMatches(group).filter((m:any)=>data?.results?.[m.id]).length === 0 ? (
+                  <div style={{padding:'40px',textAlign:'center',color:'#a0a09a',background:'rgba(255,255,255,0.04)',borderRadius:'12px'}}>No completed matches in this group yet.</div>
+                ) : (
+                  groupMatches(group).filter((m:any)=>data?.results?.[m.id]).map((m:any) => <MatchCard key={m.id} m={m} />)
+                )}
               </div>
             )}
           </div>
