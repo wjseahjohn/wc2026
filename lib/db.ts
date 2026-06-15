@@ -190,7 +190,7 @@ export async function getLeaderboard(): Promise<PlayerStats[]> {
   for (const b of all) {
     if (!map[b.playerName]) map[b.playerName] = { name: b.playerName, bets: 0, won: 0, lost: 0, pending: 0, staked: 0, winnings: 0, net: 0, paid: 0, balance: 0 };
     map[b.playerName].bets++;
-    if (b.stake > 0) map[b.playerName].staked += b.stake;
+    if (b.stake > 0) map[b.playerName].staked += b.stake; // ALL bets for balance tracking
     if (b.settled) {
       if (b.actualWin > 0) { map[b.playerName].won++; map[b.playerName].winnings += b.actualWin; }
       else map[b.playerName].lost++;
@@ -202,13 +202,11 @@ export async function getLeaderboard(): Promise<PlayerStats[]> {
   for (const p of payments) {
     if (map[p.playerName]) map[p.playerName].paid += p.amount;
   }
-  // balance = how much player still owes (positive = owes you, negative = you owe them)
-  // They owe: settled stakes (confirmed+settled losses) + pending confirmed stakes
-  // You owe: winnings
-  // Net cash owed by player = staked_settled - winnings - paid
   return Object.values(map).map(p => ({
     ...p,
     net: Math.round((p.winnings - p.staked) * 100) / 100,
+    // balance: positive = player owes you, negative = you owe player
+    // staked (all) - winnings (settled) - paid = net cash position
     balance: Math.round((p.staked - p.winnings - p.paid) * 100) / 100,
   })).sort((a, b) => b.net - a.net);
 }
