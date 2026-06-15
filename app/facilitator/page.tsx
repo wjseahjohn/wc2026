@@ -18,10 +18,13 @@ export default function FacilitatorPage() {
   const [odds, setOdds] = useState<Record<string,string>>({});
   const [handicapLines, setHandicapLines] = useState<Record<string,string>>({});
   const [scoreInput, setScoreInput] = useState<Record<string,any>>({});
+  const [payments, setPayments] = useState<any[]>([]);
+  const [payInput, setPayInput] = useState<Record<string,string>>({});
+  const [payNote, setPayNote] = useState<Record<string,string>>({});
   const [saving, setSaving] = useState('');
   const [savingResult, setSavingResult] = useState('');
   const [msg, setMsg] = useState('');
-  const [view, setView] = useState<'bets'|'results'>('bets');
+  const [view, setView] = useState<'bets'|'results'|'payments'>('bets');
   const [resultsFilter, setResultsFilter] = useState<'upcoming'|'completed'>('upcoming');
   const [filter, setFilter] = useState<'all'|'unconfirmed'|'confirmed'>('unconfirmed');
   const [playerFilter, setPlayerFilter] = useState('');
@@ -37,15 +40,44 @@ export default function FacilitatorPage() {
   }, [authed]);
 
   async function loadAll() {
-    const [b, m, mr] = await Promise.all([
+    const [b, m, mr, p] = await Promise.all([
       fetch('/api/bets').then(r=>r.json()),
       fetch('/api/matches').then(r=>r.json()),
       fetch('/api/results').then(r=>r.json()).catch(()=>({})),
+      fetch('/api/payments').then(r=>r.json()).catch(()=>[]),
     ]);
     setBets(b);
     setMatches(m.matches || []);
     setMatchResults(mr);
+    setPayments(p);
   }
+
+  async function recordPayment(playerName: string) {
+    const amount = parseFloat(payInput[playerName] || '0');
+    if (!amount || amount <= 0) { setMsg('Enter a valid amount'); return; }
+    setSaving('pay_'+playerName);
+    await fetch('/api/payments', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ adminKey: key, playerName, amount, note: payNote[playerName] || '' }),
+    });
+    setSaving('');
+    setPayInput(p => ({...p, [playerName]: ''}));
+    setPayNote(p => ({...p, [playerName]: ''}));
+    setMsg('Payment recorded for '+playerName+'!');
+    setTimeout(()=>setMsg(''), 3000);
+    loadAll();
+  }
+
+  async function deletePayment(id: string) {
+    await fetch('/api/payments', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ adminKey: key, deleteId: id }),
+    });
+    loadAll();
+  }
+
 
   function updateOdds(betId: string, val: string) {
     const updated = {...odds, [betId]: val};
@@ -242,8 +274,8 @@ export default function FacilitatorPage() {
 
           {/* View tabs */}
           <div style={{display:'flex',gap:'6px',marginBottom:'8px'}}>
-            {[['bets','Bets'],['results','Set Results']].map(([v,l]) => (
-              <button key={v} onClick={()=>setView(v as 'bets'|'results')}
+            {[['bets','Bets'],['results','Set Results'],['payments','Payments']].map(([v,l]) => (
+              <button key={v} onClick={()=>setView(v as 'bets'|'results'|'payments')}
                 style={{padding:'6px 14px',borderRadius:'20px',border:'none',cursor:'pointer',fontWeight:700,fontSize:'12px',background:view===v?'#f5c842':'rgba(255,255,255,0.08)',color:view===v?'#071f10':'#a0a09a'}}>
                 {l}
               </button>
@@ -527,6 +559,97 @@ export default function FacilitatorPage() {
               })}
             </div>
           )
+        )}
+
+        {/* PAYMENTS VIEW */}
+        {view === 'payments' && (
+          <div>
+            <div style={{marginBottom:'16px'}}>
+              <div style={{fontSize:'20px',fontWeight:900,color:'#f5c842',letterSpacing:'1px'}}>PAYMENTS</div>
+              <div style={{fontSize:'12px',color:'#a0a09a',marginTop:'2px'}}>Track cash collected from each player · Balance updates in their My Bets tab</div>
+            </div>
+
+            {(()=>{
+              const playerNames: string[] = [];
+              bets.forEach((b:any) => { if (b.playerName && !playerNames.includes(b.playerName)) playerNames.push(b.playerName); });
+
+              return playerNames.map(player => {
+                const playerBets = bets.filter((b:any) => b.playerName === player);
+                const staked = playerBets.filter((b:any)=>b.settled).reduce((s:number,b:any)=>s+(b.stake||0),0);
+                const winnings = playerBets.filter((b:any)=>b.settled&&b.actualWin>0).reduce((s:number,b:any)=>s+(b.actualWin||0),0);
+                const playerPayments = payments.filter((p:any) => p.playerName === player);
+                const totalPaid = playerPayments.reduce((s:number,p:any)=>s+p.amount,0);
+                const balance = Math.round((staked - winnings - totalPaid) * 100) / 100;
+
+                return (
+                  <div key={player} style={{background:'rgba(255,255,255,0.04)',border:'1px solid '+(balance>0?'rgba(248,113,113,0.25)':balance<0?'rgba(74,222,128,0.25)':'rgba(255,255,255,0.1)'),borderRadius:'14px',marginBottom:'12px',overflow:'hidden'}}>
+                    {/* Player header */}
+                    <div style={{padding:'12px 16px',background:'rgba(245,200,66,0.06)',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'8px'}}>
+                        <div style={{fontWeight:900,fontSize:'18px',color:'#f5c842'}}>{player}</div>
+                        <div style={{display:'flex',gap:'12px',fontSize:'12px',flexWrap:'wrap'}}>
+                          <span style={{color:'#a0a09a'}}>Staked: <span style={{color:'#f0ede4',fontWeight:700}}>${staked.toFixed(2)}</span></span>
+                          <span style={{color:'#a0a09a'}}>Won: <span style={{color:'#4ade80',fontWeight:700}}>${winnings.toFixed(2)}</span></span>
+                          <span style={{color:'#a0a09a'}}>Paid: <span style={{color:'#60a5fa',fontWeight:700}}>${totalPaid.toFixed(2)}</span></span>
+                        </div>
+                      </div>
+                      {/* Balance pill */}
+                      <div style={{marginTop:'8px',padding:'8px 12px',borderRadius:'8px',background:balance>0?'rgba(248,113,113,0.1)':balance<0?'rgba(74,222,128,0.1)':'rgba(255,255,255,0.05)',display:'inline-flex',alignItems:'center',gap:'8px'}}>
+                        <span style={{fontSize:'11px',color:'#a0a09a'}}>{balance>0?'Owes you:':balance<0?'You owe:':'Settled'}</span>
+                        <span style={{fontWeight:900,fontSize:'16px',color:balance>0?'#f87171':balance<0?'#4ade80':'#a0a09a'}}>{balance===0?'All good!':'$'+Math.abs(balance).toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    {/* Record payment */}
+                    <div style={{padding:'12px 16px',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+                      <div style={{fontSize:'11px',color:'#f5c842',fontWeight:700,marginBottom:'6px'}}>Record Payment Received</div>
+                      <div style={{display:'flex',gap:'8px',flexWrap:'wrap',alignItems:'center'}}>
+                        <div style={{display:'flex',alignItems:'center',gap:'6px',background:'rgba(255,255,255,0.05)',borderRadius:'8px',padding:'6px 10px'}}>
+                          <span style={{fontSize:'11px',color:'#a0a09a'}}>SGD $</span>
+                          <input type="number" min="0" step="1"
+                            value={payInput[player] || ''}
+                            onChange={e=>setPayInput(p=>({...p,[player]:e.target.value}))}
+                            placeholder="Amount"
+                            style={{width:'70px',padding:'4px 6px',borderRadius:'6px',border:'1px solid rgba(245,200,66,0.3)',background:'rgba(7,31,16,0.8)',color:'#f5c842',fontWeight:700,fontSize:'14px',outline:'none',fontFamily:'inherit',textAlign:'center'}} />
+                        </div>
+                        <input type="text"
+                          value={payNote[player] || ''}
+                          onChange={e=>setPayNote(p=>({...p,[player]:e.target.value}))}
+                          placeholder="Note (optional, e.g. PayNow)"
+                          style={{flex:1,minWidth:'120px',padding:'8px 10px',borderRadius:'8px',border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.05)',color:'#f0ede4',fontSize:'12px',outline:'none',fontFamily:'inherit'}} />
+                        <button onClick={()=>recordPayment(player)} disabled={saving==='pay_'+player}
+                          style={{padding:'8px 14px',borderRadius:'8px',border:'none',cursor:'pointer',fontWeight:700,fontSize:'12px',background:'#f5c842',color:'#071f10',opacity:saving==='pay_'+player?0.5:1,whiteSpace:'nowrap'}}>
+                          {saving==='pay_'+player?'Saving...':'Record Payment'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Payment history */}
+                    {playerPayments.length > 0 && (
+                      <div style={{padding:'12px 16px'}}>
+                        <div style={{fontSize:'11px',color:'#a0a09a',marginBottom:'6px',fontWeight:600}}>Payment History</div>
+                        <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
+                          {playerPayments.map((p:any) => (
+                            <div key={p.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 10px',borderRadius:'8px',background:'rgba(96,165,250,0.08)',border:'1px solid rgba(96,165,250,0.15)'}}>
+                              <div>
+                                <span style={{fontWeight:700,color:'#60a5fa',fontSize:'13px'}}>+${p.amount.toFixed(2)}</span>
+                                {p.note && <span style={{fontSize:'11px',color:'#a0a09a',marginLeft:'8px'}}>{p.note}</span>}
+                                <div style={{fontSize:'10px',color:'#a0a09a'}}>{new Date(p.createdAt).toLocaleDateString('en-SG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+                              </div>
+                              <button onClick={()=>deletePayment(p.id)}
+                                style={{padding:'4px 8px',borderRadius:'6px',border:'1px solid rgba(248,113,113,0.3)',background:'rgba(248,113,113,0.1)',color:'#f87171',cursor:'pointer',fontSize:'11px',fontWeight:600}}>
+                                Del
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+            })()}
+          </div>
         )}
       </div>
     </div>
