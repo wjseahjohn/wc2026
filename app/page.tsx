@@ -186,6 +186,9 @@ export default function Home() {
   const myStaked = mySettled.reduce((s:number,b:any)=>s+(b.stake||0),0);
   const myWinnings = myWon.reduce((s:number,b:any)=>s+(b.actualWin||0),0);
   const myNet = myWinnings - myStaked;
+  const myPlayerStats = board.find((p:any) => p.name?.toLowerCase() === name.toLowerCase());
+  const myPaid = myPlayerStats?.paid || 0;
+  const myBalance = myPlayerStats?.balance ?? (myStaked - myWinnings - myPaid);
   const uniquePlayers: string[] = [];
   bets.forEach((b:any) => { if (b.playerName && !uniquePlayers.includes(b.playerName)) uniquePlayers.push(b.playerName); });
 
@@ -646,6 +649,32 @@ export default function Home() {
                       {myPending.length} bet{myPending.length>1?'s':''} pending SGPools confirmation
                     </div>
                   )}
+                </div>
+
+                {/* Balance card */}
+                <div style={{background:'rgba(255,255,255,0.05)',border:'1px solid '+(myBalance>0?'rgba(248,113,113,0.3)':myBalance<0?'rgba(74,222,128,0.3)':'rgba(255,255,255,0.15)'),borderRadius:'14px',padding:'16px',marginBottom:'16px'}}>
+                  <div style={{fontWeight:900,color:'#f5c842',marginBottom:'12px',fontSize:'14px',letterSpacing:'1px'}}>RUNNING BALANCE</div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'10px'}}>
+                    {[
+                      {l:'Total Staked',v:'$'+myStaked.toFixed(2),c:'#f0ede4'},
+                      {l:'Total Won',v:'$'+myWinnings.toFixed(2),c:'#4ade80'},
+                      {l:'Paid Facilitator',v:'$'+myPaid.toFixed(2),c:'#60a5fa'},
+                    ].map(x=>(
+                      <div key={x.l} style={{textAlign:'center',padding:'10px',borderRadius:'10px',background:'rgba(255,255,255,0.04)'}}>
+                        <div style={{fontWeight:900,fontSize:'15px',color:x.c}}>{x.v}</div>
+                        <div style={{fontSize:'10px',color:'#a0a09a',marginTop:'2px'}}>{x.l}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{padding:'12px',borderRadius:'10px',background:myBalance>0?'rgba(248,113,113,0.1)':myBalance<0?'rgba(74,222,128,0.1)':'rgba(255,255,255,0.04)',border:'1px solid '+(myBalance>0?'rgba(248,113,113,0.3)':myBalance<0?'rgba(74,222,128,0.3)':'rgba(255,255,255,0.1)'),textAlign:'center'}}>
+                    <div style={{fontSize:'11px',color:'#a0a09a',marginBottom:'4px'}}>
+                      {myBalance>0?'You still owe facilitator':myBalance<0?'Facilitator owes you':'All settled up!'}
+                    </div>
+                    <div style={{fontWeight:900,fontSize:'24px',color:myBalance>0?'#f87171':myBalance<0?'#4ade80':'#a0a09a'}}>
+                      {myBalance===0?'$0.00':'$'+Math.abs(myBalance).toFixed(2)}
+                    </div>
+                    {myBalance!==0 && <div style={{fontSize:'10px',color:'#a0a09a',marginTop:'4px'}}>Based on settled bets only · pending bets not included</div>}
+                  </div>
                 </div>
 
                 <div style={{fontSize:'13px',fontWeight:700,color:'#a0a09a',marginBottom:'8px',letterSpacing:'1px'}}>ALL BETS</div>
