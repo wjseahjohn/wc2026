@@ -180,14 +180,15 @@ export async function setResult(targetId: string, result: string): Promise<void>
 
 export interface PlayerStats {
   name: string; bets: number; won: number; lost: number; pending: number;
-  staked: number; winnings: number; net: number;
+  staked: number; winnings: number; net: number; paid: number; balance: number;
 }
 
 export async function getLeaderboard(): Promise<PlayerStats[]> {
   const all = await getAllBets();
+  const payments = await redis.get<any[]>('wc2026:payments') || [];
   const map: Record<string, PlayerStats> = {};
   for (const b of all) {
-    if (!map[b.playerName]) map[b.playerName] = { name: b.playerName, bets: 0, won: 0, lost: 0, pending: 0, staked: 0, winnings: 0, net: 0 };
+    if (!map[b.playerName]) map[b.playerName] = { name: b.playerName, bets: 0, won: 0, lost: 0, pending: 0, staked: 0, winnings: 0, net: 0, paid: 0, balance: 0 };
     map[b.playerName].bets++;
     if (b.stake > 0) map[b.playerName].staked += b.stake;
     if (b.settled) {
@@ -197,5 +198,17 @@ export async function getLeaderboard(): Promise<PlayerStats[]> {
       map[b.playerName].pending++;
     }
   }
-  return Object.values(map).map(p => ({ ...p, net: p.winnings - p.staked })).sort((a, b) => b.net - a.net);
+  // Add payments per player
+  for (const p of payments) {
+    if (map[p.playerName]) map[p.playerName].paid += p.amount;
+  }
+  // balance = how much player still owes (positive = owes you, negative = you owe them)
+  // They owe: settled stakes (confirmed+settled losses) + pending confirmed stakes
+  // You owe: winnings
+  // Net cash owed by player = staked_settled - winnings - paid
+  return Object.values(map).map(p => ({
+    ...p,
+    net: Math.round((p.winnings - p.staked) * 100) / 100,
+    balance: Math.round((p.staked - p.winnings - p.paid) * 100) / 100,
+  })).sort((a, b) => b.net - a.net);
 }
