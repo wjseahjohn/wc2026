@@ -575,7 +575,7 @@ export default function FacilitatorPage() {
 
               return playerNames.map(player => {
                 const playerBets = bets.filter((b:any) => b.playerName === player);
-                const staked = playerBets.filter((b:any)=>b.settled).reduce((s:number,b:any)=>s+(b.stake||0),0);
+                const staked = playerBets.reduce((s:number,b:any)=>s+(b.stake||0),0);
                 const winnings = playerBets.filter((b:any)=>b.settled&&b.actualWin>0).reduce((s:number,b:any)=>s+(b.actualWin||0),0);
                 const playerPayments = payments.filter((p:any) => p.playerName === player);
                 const totalPaid = playerPayments.reduce((s:number,p:any)=>s+p.amount,0);
