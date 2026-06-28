@@ -494,7 +494,7 @@ export default function Home() {
         {tab === 'matches' && (
           <div>
             <div style={{marginBottom:'14px'}}>
-              <div style={{fontSize:'22px',fontWeight:900,color:'#f5c842',letterSpacing:'2px'}}>GROUP STAGE</div>
+              <div style={{fontSize:'22px',fontWeight:900,color:'#f5c842',letterSpacing:'2px'}}>{matchStatus==='completed'?'COMPLETED MATCHES':group==='R32'?'ROUND OF 32':'GROUP STAGE'}</div>
             </div>
 
             {/* Upcoming / Completed toggle */}
@@ -522,7 +522,7 @@ export default function Home() {
               <div style={{display:'flex',gap:'4px',overflowX:'auto',marginBottom:'10px',paddingBottom:'4px',scrollbarWidth:'none'}}>
                 {GROUPS.map(g => (
                   <button key={g} onClick={()=>setGroup(g)} style={{padding:'7px 13px',borderRadius:'8px',border:'none',cursor:'pointer',fontWeight:700,flexShrink:0,fontSize:'13px',background:group===g?'#f5c842':'rgba(255,255,255,0.06)',color:group===g?'#071f10':'#a0a09a'}}>
-                    {g}
+                    {g === 'R32' ? 'R32' : g}
                   </button>
                 ))}
               </div>
