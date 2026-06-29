@@ -72,7 +72,7 @@ function statusPill(b: any) {
 function formatSelection(b: any, matches: any[]): string {
   const sel = b.selection;
   const bt = b.betType;
-  const mid = b.targetId?.split('_')[0];
+  const mid = (b.targetId?.startsWith('R32') ? b.targetId?.split('_').slice(0,2).join('_') : b.targetId?.split('_')[0]);
   const m = matches.find((x:any) => x.id === mid);
 
   if (bt === '1x2') {
@@ -696,7 +696,7 @@ export default function Home() {
                             <div style={{fontWeight:700,fontSize:'14px',marginBottom:'2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
                               {(()=>{
                                 if (b.betType==='1x2') {
-                                  const mid=b.targetId?.split('_')[0];
+                                  const mid=(b.targetId?.startsWith('R32') ? b.targetId?.split('_').slice(0,2).join('_') : b.targetId?.split('_')[0]);
                                   const m=(data?.matches||[]).find((x:any)=>x.id===mid);
                                   if(m&&b.selection==='home') return m.homeTeam+' Win';
                                   if(m&&b.selection==='away') return m.awayTeam+' Win';
@@ -706,7 +706,7 @@ export default function Home() {
                               })()}
                             </div>
                             <div style={{fontSize:'12px',color:'#f0ede4',marginBottom:'2px'}}>
-                              {(()=>{const mid=b.targetId?.split('_')[0];const m=(data?.matches||[]).find((x:any)=>x.id===mid);return m?m.homeTeam+' vs '+m.awayTeam:'';})()}
+                              {(()=>{const mid=(b.targetId?.startsWith('R32') ? b.targetId?.split('_').slice(0,2).join('_') : b.targetId?.split('_')[0]);const m=(data?.matches||[]).find((x:any)=>x.id===mid);return m?m.homeTeam+' vs '+m.awayTeam:'';})()}
                             </div>
                             <div style={{fontSize:'11px',color:'#a0a09a'}}>{new Date(b.createdAt).toLocaleDateString('en-SG',{day:'numeric',month:'short'})}</div>
                           </div>
@@ -761,7 +761,7 @@ export default function Home() {
               <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
                 {(data?.matches||[]).map((m:any) => {
                   const matchBets = bets.filter((b:any) => {
-                    const mid = b.targetId?.split('_')[0];
+                    const mid = (b.targetId?.startsWith('R32') ? b.targetId?.split('_').slice(0,2).join('_') : b.targetId?.split('_')[0]);
                     return mid === m.id && (allBetsFilter===''||b.playerName===allBetsFilter);
                   });
                   if (matchBets.length === 0) return null;
