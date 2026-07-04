@@ -178,13 +178,13 @@ export default function FacilitatorPage() {
   }
 
   function getMatchLabel(targetId: string) {
-    const mid = targetId?.startsWith('R32') ? targetId?.split('_').slice(0,2).join('_') : targetId?.split('_')[0];
+    const mid = (targetId?.startsWith('R32')||targetId?.startsWith('R16')) ? targetId?.split('_').slice(0,2).join('_') : targetId?.split('_')[0];
     const m = matches.find(x => x.id === mid);
     return m ? m.homeTeam + ' vs ' + m.awayTeam : targetId;
   }
 
   function getMatchTime(targetId: string) {
-    const mid = targetId?.startsWith('R32') ? targetId?.split('_').slice(0,2).join('_') : targetId?.split('_')[0];
+    const mid = (targetId?.startsWith('R32')||targetId?.startsWith('R16')) ? targetId?.split('_').slice(0,2).join('_') : targetId?.split('_')[0];
     const m = matches.find(x => x.id === mid);
     return m ? m.date + ' · ' + m.time + ' SGT' : '';
   }
