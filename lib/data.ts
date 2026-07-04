@@ -114,6 +114,15 @@ export const MATCHES: Match[] = [
   { id:'R32_14', homeTeam:'Australia',    awayTeam:'Egypt',          homeFlag:'AU', awayFlag:'EG',  group:'R32', date:'2026-07-04', time:'02:00', venue:'AT&T Stadium, Dallas' },
   { id:'R32_15', homeTeam:'Argentina',    awayTeam:'Cape Verde',     homeFlag:'AR', awayFlag:'CV',  group:'R32', date:'2026-07-04', time:'06:00', venue:'Hard Rock Stadium, Miami' },
   { id:'R32_16', homeTeam:'Colombia',     awayTeam:'Ghana',          homeFlag:'CO', awayFlag:'GH',  group:'R32', date:'2026-07-04', time:'09:30', venue:'Arrowhead Stadium, Kansas City' },
+  // ROUND OF 16 — Jul 4-7 ET, converted to SGT (ET+12h)
+  { id:'R16_1', homeTeam:'Canada',      awayTeam:'Morocco',   homeFlag:'CA', awayFlag:'MA',  group:'R16', date:'2026-07-05', time:'01:00', venue:'NRG Stadium, Houston' },
+  { id:'R16_2', homeTeam:'Paraguay',    awayTeam:'France',    homeFlag:'PY', awayFlag:'FR',  group:'R16', date:'2026-07-05', time:'05:00', venue:'Lincoln Financial Field, Philadelphia' },
+  { id:'R16_3', homeTeam:'Brazil',      awayTeam:'Norway',    homeFlag:'BR', awayFlag:'NO',  group:'R16', date:'2026-07-06', time:'04:00', venue:'MetLife Stadium, New York' },
+  { id:'R16_4', homeTeam:'Mexico',      awayTeam:'England',   homeFlag:'MX', awayFlag:'ENG', group:'R16', date:'2026-07-06', time:'08:00', venue:'Estadio Azteca, Mexico City' },
+  { id:'R16_5', homeTeam:'Portugal',    awayTeam:'Spain',     homeFlag:'PT', awayFlag:'ES',  group:'R16', date:'2026-07-07', time:'03:00', venue:'AT&T Stadium, Dallas' },
+  { id:'R16_6', homeTeam:'USA',         awayTeam:'Belgium',   homeFlag:'US', awayFlag:'BE',  group:'R16', date:'2026-07-07', time:'08:00', venue:'Lumen Field, Seattle' },
+  { id:'R16_7', homeTeam:'Argentina',   awayTeam:'Egypt',     homeFlag:'AR', awayFlag:'EG',  group:'R16', date:'2026-07-08', time:'00:00', venue:'Mercedes-Benz Stadium, Atlanta' },
+  { id:'R16_8', homeTeam:'Switzerland', awayTeam:'Colombia',  homeFlag:'CH', awayFlag:'CO',  group:'R16', date:'2026-07-08', time:'04:00', venue:'BC Place, Vancouver' },
 ];
 
-export const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L','R32'];
+export const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L','R32','R16'];
