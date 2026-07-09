@@ -123,6 +123,12 @@ export const MATCHES: Match[] = [
   { id:'R16_6', homeTeam:'USA',         awayTeam:'Belgium',   homeFlag:'US', awayFlag:'BE',  group:'R16', date:'2026-07-07', time:'08:00', venue:'Lumen Field, Seattle' },
   { id:'R16_7', homeTeam:'Argentina',   awayTeam:'Egypt',     homeFlag:'AR', awayFlag:'EG',  group:'R16', date:'2026-07-08', time:'00:00', venue:'Mercedes-Benz Stadium, Atlanta' },
   { id:'R16_8', homeTeam:'Switzerland', awayTeam:'Colombia',  homeFlag:'CH', awayFlag:'CO',  group:'R16', date:'2026-07-08', time:'04:00', venue:'BC Place, Vancouver' },
+
+  // QUARTER FINALS
+  { id:'QF_1', homeTeam:'France',    awayTeam:'Morocco',     homeFlag:'FR', awayFlag:'MA',  group:'QF', date:'2026-07-10', time:'04:00', venue:'Gillette Stadium, Foxborough' },
+  { id:'QF_2', homeTeam:'Spain',     awayTeam:'Belgium',     homeFlag:'ES', awayFlag:'BE',  group:'QF', date:'2026-07-11', time:'03:00', venue:'SoFi Stadium, Los Angeles' },
+  { id:'QF_3', homeTeam:'Norway',    awayTeam:'England',     homeFlag:'NO', awayFlag:'ENG', group:'QF', date:'2026-07-12', time:'05:00', venue:'Hard Rock Stadium, Miami' },
+  { id:'QF_4', homeTeam:'Argentina', awayTeam:'Switzerland', homeFlag:'AR', awayFlag:'CH',  group:'QF', date:'2026-07-12', time:'09:00', venue:'Arrowhead Stadium, Kansas City' },
 ];
 
-export const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L','R32','R16'];
+export const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L','R32','R16','QF'];
