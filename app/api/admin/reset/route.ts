@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       // Get the match ID from targetId - it's always the part before the first underscore
       // For 1X2 bets: targetId = "A1" (no underscore)
       // For other bets: targetId = "A1_score_4-0" or "A1_btts-yes" etc.
-      const betMatchId = b.targetId.includes('_') ? ((b.targetId.startsWith('R32')||b.targetId.startsWith('R16')||b.targetId.startsWith('QF')) ? b.targetId.split('_').slice(0,2).join('_') : b.targetId.split('_')[0]) : b.targetId;
+      const betMatchId = b.targetId.includes('_') ? ((b.targetId.startsWith('R32')||b.targetId.startsWith('R16')||b.targetId.startsWith('QF')||b.targetId.startsWith('SF')) ? b.targetId.split('_').slice(0,2).join('_') : b.targetId.split('_')[0]) : b.targetId;
       if (betMatchId !== resetMatchId) return b; // not this match, leave alone
       count++;
       return { ...b, settled: false, actualWin: 0 };
