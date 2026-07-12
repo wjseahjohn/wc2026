@@ -129,6 +129,10 @@ export const MATCHES: Match[] = [
   { id:'QF_2', homeTeam:'Spain',     awayTeam:'Belgium',     homeFlag:'ES', awayFlag:'BE',  group:'QF', date:'2026-07-11', time:'03:00', venue:'SoFi Stadium, Los Angeles' },
   { id:'QF_3', homeTeam:'Norway',    awayTeam:'England',     homeFlag:'NO', awayFlag:'ENG', group:'QF', date:'2026-07-12', time:'05:00', venue:'Hard Rock Stadium, Miami' },
   { id:'QF_4', homeTeam:'Argentina', awayTeam:'Switzerland', homeFlag:'AR', awayFlag:'CH',  group:'QF', date:'2026-07-12', time:'09:00', venue:'Arrowhead Stadium, Kansas City' },
+
+  // SEMI FINALS
+  { id:'SF_1', homeTeam:'France',  awayTeam:'Spain',     homeFlag:'FR',  awayFlag:'ES', group:'SF', date:'2026-07-15', time:'03:00', venue:'AT&T Stadium, Dallas' },
+  { id:'SF_2', homeTeam:'England', awayTeam:'Argentina', homeFlag:'ENG', awayFlag:'AR', group:'SF', date:'2026-07-16', time:'03:00', venue:'Mercedes-Benz Stadium, Atlanta' },
 ];
 
-export const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L','R32','R16','QF'];
+export const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L','R32','R16','QF','SF'];
