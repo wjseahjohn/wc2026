@@ -75,7 +75,7 @@ function didBetWin(bet: Bet, result: MatchResult): boolean {
   const { homeScore, awayScore, htHomeScore, htAwayScore } = result;
   const sel = bet.selection;
   const bt = bet.betType;
-  const matchId = (bet.targetId.startsWith('R32')||bet.targetId.startsWith('R16')||bet.targetId.startsWith('QF')) ? bet.targetId.split('_').slice(0,2).join('_') : bet.targetId.split('_')[0];
+  const matchId = (bet.targetId.startsWith('R32')||bet.targetId.startsWith('R16')||bet.targetId.startsWith('QF')||bet.targetId.startsWith('SF')) ? bet.targetId.split('_').slice(0,2).join('_') : bet.targetId.split('_')[0];
 
   // Only settle bets for this match
   if (!bet.targetId.startsWith(matchId)) return false;
@@ -163,7 +163,7 @@ export async function setMatchResult(matchId: string, result: MatchResult): Prom
   // Settle all bets for this match (re-settle if updating)
   const all = await getAllBets();
   const updated = all.map(bet => {
-    const betMatchId = (bet.targetId.startsWith('R32')||bet.targetId.startsWith('R16')||bet.targetId.startsWith('QF')) ? bet.targetId.split('_').slice(0,2).join('_') : bet.targetId.split('_')[0];
+    const betMatchId = (bet.targetId.startsWith('R32')||bet.targetId.startsWith('R16')||bet.targetId.startsWith('QF')||bet.targetId.startsWith('SF')) ? bet.targetId.split('_').slice(0,2).join('_') : bet.targetId.split('_')[0];
     if (betMatchId !== matchId) return bet;
     const won = didBetWin(bet, result);
     return { ...bet, settled: true, actualWin: won ? Math.round(bet.stake * bet.odds * 100) / 100 : 0 };
