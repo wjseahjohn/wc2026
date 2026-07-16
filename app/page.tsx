@@ -494,7 +494,7 @@ export default function Home() {
         {tab === 'matches' && (
           <div>
             <div style={{marginBottom:'14px'}}>
-              <div style={{fontSize:'22px',fontWeight:900,color:'#f5c842',letterSpacing:'2px'}}>{matchStatus==='completed'?'COMPLETED MATCHES':group==='SF'?'SEMI FINALS':group==='QF'?'QUARTER FINALS':group==='R16'?'ROUND OF 16':group==='R32'?'ROUND OF 32':'GROUP STAGE'}</div>
+              <div style={{fontSize:'22px',fontWeight:900,color:'#f5c842',letterSpacing:'2px'}}>{matchStatus==='completed'?'COMPLETED MATCHES':group==='FINAL'?'THE FINAL':group==='3RD'?'3RD PLACE':group==='SF'?'SEMI FINALS':group==='QF'?'QUARTER FINALS':group==='R16'?'ROUND OF 16':group==='R32'?'ROUND OF 32':'GROUP STAGE'}</div>
             </div>
 
             {/* Upcoming / Completed toggle */}
@@ -522,7 +522,7 @@ export default function Home() {
               <div style={{display:'flex',gap:'4px',overflowX:'auto',marginBottom:'10px',paddingBottom:'4px',scrollbarWidth:'none'}}>
                 {GROUPS.map(g => (
                   <button key={g} onClick={()=>setGroup(g)} style={{padding:'7px 13px',borderRadius:'8px',border:'none',cursor:'pointer',fontWeight:700,flexShrink:0,fontSize:'13px',background:group===g?'#f5c842':'rgba(255,255,255,0.06)',color:group===g?'#071f10':'#a0a09a'}}>
-                    {g === 'SF' ? 'SF' : g === 'QF' ? 'QF' : g === 'R32' ? 'R32' : g === 'R16' ? 'R16' : g}
+                    {g === 'FINAL' ? '🏆' : g === '3RD' ? '3rd' : g === 'SF' ? 'SF' : g === 'QF' ? 'QF' : g === 'R32' ? 'R32' : g === 'R16' ? 'R16' : g}
                   </button>
                 ))}
               </div>
