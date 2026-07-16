@@ -133,6 +133,10 @@ export const MATCHES: Match[] = [
   // SEMI FINALS
   { id:'SF_1', homeTeam:'France',  awayTeam:'Spain',     homeFlag:'FR',  awayFlag:'ES', group:'SF', date:'2026-07-15', time:'03:00', venue:'AT&T Stadium, Dallas' },
   { id:'SF_2', homeTeam:'England', awayTeam:'Argentina', homeFlag:'ENG', awayFlag:'AR', group:'SF', date:'2026-07-16', time:'03:00', venue:'Mercedes-Benz Stadium, Atlanta' },
+
+  // THIRD PLACE & FINAL
+  { id:'3RD',   homeTeam:'France', awayTeam:'England',   homeFlag:'FR', awayFlag:'ENG', group:'3RD',   date:'2026-07-19', time:'05:00', venue:'Hard Rock Stadium, Miami' },
+  { id:'FINAL', homeTeam:'Spain',  awayTeam:'Argentina', homeFlag:'ES', awayFlag:'AR',  group:'FINAL', date:'2026-07-20', time:'03:00', venue:'MetLife Stadium, New York/New Jersey' },
 ];
 
-export const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L','R32','R16','QF','SF'];
+export const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L','R32','R16','QF','SF','3RD','FINAL'];
